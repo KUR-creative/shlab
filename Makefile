@@ -19,6 +19,11 @@ all: $(FILES)
 handin:
 	cp tsh.c $(HANDINDIR)/$(TEAM)-$(VERSION)-tsh.c
 
+t: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c -DRELEASE
+	make rtest02
+	make test02
+
 tsh: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c -lcriterion
 	./tsh
