@@ -19,14 +19,28 @@ all: $(FILES)
 handin:
 	cp tsh.c $(HANDINDIR)/$(TEAM)-$(VERSION)-tsh.c
 
-t: tsh.c
-	$(CC) $(CFLAGS) -o tsh tsh.c -DRELEASE
+no:
+	# -------------------------------1--------------------------------
+	######## ref ########
 	make rtest01
+	######## mine ########
 	make test01
+	# -------------------------------2--------------------------------
+	######## ref ########
 	make rtest02
+	######## mine ########
 	make test02
 
-tsh: tsh.c
+t: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c -DRELEASE
+	# -------------------------------3--------------------------------
+	######## ref ########
+	make rtest03
+	######## mine ########
+	make test03
+
+
+nt: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c -lcriterion
 	./tsh
 

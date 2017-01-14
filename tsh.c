@@ -54,6 +54,11 @@ struct job_t jobs[MAXJOBS]; /* The job list */
 
 /* Function prototypes */
 
+//mine
+pid_t Fork(void);
+int Execve(const char* filename, const char* argv[],
+			const char* envp[]);
+
 /* Here are the functions that you will implement */
 void eval(char *cmdline);
 
@@ -169,9 +174,16 @@ int main(int argc, char **argv)
 */
 void eval(char* cmdline) 
 {
-	char**	argv = NULL;
+	char*	argv[MAXARGS];	
 	parseline(cmdline, argv);
-	builtin_cmd(argv);
+	
+	if(builtin_cmd(argv) == 0){
+		int pid = Fork();
+		if(pid == 0){
+			execve(argv[0], argv, environ);
+			exit(0);
+		}
+	}
     return;
 }
 
@@ -299,6 +311,24 @@ void sigtstp_handler(int sig)
 /*********************
  * End signal handlers
  *********************/
+
+//mine
+pid_t Fork(void)
+{
+	pid_t	pid;
+	if((pid = fork()) < 0)
+		unix_error("Fork error");
+	return pid;
+}
+
+int Execve(const char* filename, const char* argv[],
+			const char* envp[])
+{
+	int ret;
+	if( (ret = execve(filename, argv, envp)) == -1 )
+		unix_error("Execve error");
+	return ret;
+}
 
 /***********************************************
  * Helper routines that manipulate the job list
@@ -521,8 +551,36 @@ void sigquit_handler(int sig)
 
 #include <criterion/criterion.h>
 
-Test(test, tt){
-	cr_assert_fail("nope!!");
+#define lxEXPECT_EQ(actual,expected)\
+	cr_expect_eq((actual),(expected),\
+	#actual":0x%lX != 0x%lX:"#expected"\n",(int64_t)(actual),(int64_t)(expected))
+
+#define lxASSERT_EQ(actual,expected)\
+	cr_assert_eq((actual),(expected),\
+	#actual":0x%lx != 0x%lx:"#expected"\n",(int64_t)(actual),(int64_t)(expected))
+
+#define dASSERT_EQ(actual,expected)\
+	cr_assert_eq((actual),(expected),\
+	#actual":%d != %d:"#expected"\n",(int32_t)(actual),(int32_t)(expected))
+
+
+#define dEXPECT_EQ(actual,expected)\
+	cr_expect_eq((actual),(expected),\
+	#actual":%d != %d:"#expected"\n",(int32_t)(actual),(int32_t)(expected))
+
+#define pASSERT_EQ(actual,expected)\
+	cr_assert_eq((actual),(expected),\
+	#actual":%p != %p:"#expected"\n",(void**)(actual),(void**)(expected))
+
+
+Test(builtin_cmd, ifCmdIsntBuiltInThenReturn0){
+	//given
+	char*	cmdline			= "nope";
+	char*	argv[MAXARGS];	
+	//when
+	parseline(cmdline, argv);
+	//then
+	dASSERT_EQ( builtin_cmd(argv), 0 );
 }
 
 #endif
