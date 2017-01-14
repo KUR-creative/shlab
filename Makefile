@@ -25,6 +25,7 @@ tsh: tsh.c
 
 tsh-release: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c -DRELEASE
+	./tsh
 
 ##################
 # Regression tests
