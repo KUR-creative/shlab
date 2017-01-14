@@ -21,6 +21,8 @@ handin:
 
 t: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c -DRELEASE
+	make rtest01
+	make test01
 	make rtest02
 	make test02
 

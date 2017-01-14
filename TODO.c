@@ -3,8 +3,9 @@ what's going on this project?
 OBJECTIVE
 all test passed
 
-test1
+//test1	//maybe...
 test2
+	tsh need to deal with 'quit' cmd
 test3
 test4
 test5
