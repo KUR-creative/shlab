@@ -19,6 +19,12 @@ all: $(FILES)
 handin:
 	cp tsh.c $(HANDINDIR)/$(TEAM)-$(VERSION)-tsh.c
 
+tsh: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c -lcriterion
+	./tsh
+
+tsh-release: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c -DRELEASE
 
 ##################
 # Regression tests

@@ -89,6 +89,8 @@ handler_t *Signal(int signum, handler_t *handler);
 /*
  * main - The shell's main routine 
  */
+/*------------------------------------------------------------------*/
+#ifdef RELEASE
 int main(int argc, char **argv) 
 {
     char c;
@@ -152,6 +154,8 @@ int main(int argc, char **argv)
 
     exit(0); /* control never reaches here */
 }
+#endif
+/*------------------------------------------------------------------*/
   
 /* 
  * eval - Evaluate the command line that the user has just typed in
@@ -509,4 +513,14 @@ void sigquit_handler(int sig)
 }
 
 
+/*--------------------------*/
+#ifndef RELEASE
 
+#include <criterion/criterion.h>
+
+Test(test, tt){
+	cr_assert_fail("nope");
+}
+
+#endif
+/*--------------------------*/
