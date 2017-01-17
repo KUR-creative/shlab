@@ -13,8 +13,10 @@
 #include <sys/wait.h>
 #include <errno.h>
 
+#include "csapp.h"
+
 /* Misc manifest constants */
-#define MAXLINE    1024   /* max line size */
+//#define MAXLINE    1024   /* max line size */
 #define MAXARGS     128   /* max args on a command line */
 #define MAXJOBS      16   /* max jobs at any point in time */
 #define MAXJID    1<<16   /* max job ID */
@@ -54,11 +56,6 @@ struct job_t jobs[MAXJOBS]; /* The job list */
 
 /* Function prototypes */
 
-//mine
-pid_t Fork(void);
-int Execve(char* filename, char* argv[],
-			char* envp[]);
-
 /* Here are the functions that you will implement */
 void eval(char *cmdline);
 
@@ -86,10 +83,10 @@ int pid2jid(pid_t pid);
 void listjobs(struct job_t *jobs);
 
 void usage(void);
-void unix_error(char *msg);
-void app_error(char *msg);
+//void unix_error(char *msg);
+//void app_error(char *msg);
 typedef void handler_t(int);
-handler_t *Signal(int signum, handler_t *handler);
+//handler_t *Signal(int signum, handler_t *handler);
 
 /*
  * main - The shell's main routine 
@@ -174,11 +171,15 @@ int main(int argc, char **argv)
 */
 void eval(char* cmdline) 
 {
-	char*	argv[MAXARGS];	
-	int		isBg, isBuiltin;
+	char*		argv[MAXARGS];	
+	int			isBg, isBuiltin;
+	int			pid;
+	sigset_t	maskAll, maskOne, prevOne;
+
+	
 	
 	isBg = parseline(cmdline, argv);
-	isBuiltin = builtin_cmd(argv);
+	isBuiltin = builtin_cmd(argv);	// run builtin or ret: 0
 	
 	if(! isBuiltin){
 		int pid = Fork();
@@ -322,23 +323,6 @@ void sigtstp_handler(int sig)
  * End signal handlers
  *********************/
 
-//mine
-pid_t Fork(void)
-{
-	pid_t	pid;
-	if((pid = fork()) < 0)
-		unix_error("Fork error");
-	return pid;
-}
-
-int Execve(char* filename, char* argv[],
-			char* envp[])
-{
-	int ret;
-	if( (ret = execve(filename, argv, envp)) == -1 )
-		unix_error("Execve error");
-	return ret;
-}
 
 /***********************************************
  * Helper routines that manipulate the job list
@@ -514,37 +498,37 @@ void usage(void)
 
 /*
  * unix_error - unix-style error routine
- */
 void unix_error(char *msg)
 {
     fprintf(stdout, "%s: %s\n", msg, strerror(errno));
     exit(1);
 }
+ */
 
 /*
  * app_error - application-style error routine
- */
 void app_error(char *msg)
 {
     fprintf(stdout, "%s\n", msg);
     exit(1);
 }
+ */
 
 /*
  * Signal - wrapper for the sigaction function
- */
 handler_t *Signal(int signum, handler_t *handler) 
 {
     struct sigaction action, old_action;
 
     action.sa_handler = handler;  
-    sigemptyset(&action.sa_mask); /* block sigs of type being handled */
-    action.sa_flags = SA_RESTART; /* restart syscalls if possible */
+    sigemptyset(&action.sa_mask); // block sigs of type being handled 
+    action.sa_flags = SA_RESTART; // restart syscalls if possible 
 
     if (sigaction(signum, &action, &old_action) < 0)
 	unix_error("Signal error");
     return (old_action.sa_handler);
 }
+*/
 
 /*
  * sigquit_handler - The driver program can gracefully terminate the

@@ -8,8 +8,12 @@ TSH = ./tsh
 TSHREF = ./tshref
 TSHARGS = "-p"
 CC = gcc
-CFLAGS = -Wall -O2
+#CFLAGS = -Wall -O2
 FILES = $(TSH) ./myspin ./mysplit ./mystop ./myint
+
+LIBS = -lpthread  -lrt
+INCS = -I./
+CFLAGS = -g -Wall -std=gnu99 -O2  #-Werror
 
 all: $(FILES)
 
@@ -32,7 +36,7 @@ no:
 	make test02
 
 t: tsh.c
-	$(CC) $(CFLAGS) -o tsh tsh.c -DRELEASE
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------3--------------------------------
 	######## ref ########
 	make rtest03

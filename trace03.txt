@@ -1,10 +1,6 @@
 #
 # trace03.txt - Run a foreground job.
 #
-/bin/echo -e tsh> ./myspin 2 
-./myspin 2 
-/bin/echo -e myspin 2 was fg job, so this str must be printed in 2 sec
-/bin/echo -e if not, it's not fg job rather bg job...!
 
 /bin/echo tsh> quit
 quit
