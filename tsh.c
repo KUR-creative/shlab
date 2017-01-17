@@ -56,8 +56,8 @@ struct job_t jobs[MAXJOBS]; /* The job list */
 
 //mine
 pid_t Fork(void);
-int Execve(const char* filename, const char* argv[],
-			const char* envp[]);
+int Execve(char* filename, char* argv[],
+			char* envp[]);
 
 /* Here are the functions that you will implement */
 void eval(char *cmdline);
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
     while (1) {
 		/* Read command line */
 		if (emit_prompt) {
-			printf("%s", prompt);
+			printf("%s", prompt); //prompt = "tsh>"
 			fflush(stdout);
 		}
 		if ((fgets(cmdline, MAXLINE, stdin) == NULL) && ferror(stdin))
@@ -175,9 +175,12 @@ int main(int argc, char **argv)
 void eval(char* cmdline) 
 {
 	char*	argv[MAXARGS];	
-	parseline(cmdline, argv);
+	int		isBg, isBuiltin;
 	
-	if(builtin_cmd(argv) == 0){
+	isBg = parseline(cmdline, argv);
+	isBuiltin = builtin_cmd(argv);
+	
+	if(! isBuiltin){
 		int pid = Fork();
 					puts("fg");
 		if(pid == 0){
@@ -287,6 +290,8 @@ void waitfg(pid_t pid)
  *     received a SIGSTOP or SIGTSTP signal. The handler reaps all
  *     available zombie children, but doesn't wait for any other
  *     currently running children to terminate.  
+ *
+ *     SIGCHLD는 child가 죽거나/멈추면 parent에게 send된다.
  */
 void sigchld_handler(int sig) 
 {
@@ -326,8 +331,8 @@ pid_t Fork(void)
 	return pid;
 }
 
-int Execve(const char* filename, const char* argv[],
-			const char* envp[])
+int Execve(char* filename, char* argv[],
+			char* envp[])
 {
 	int ret;
 	if( (ret = execve(filename, argv, envp)) == -1 )
@@ -588,6 +593,7 @@ Test(builtin_cmd, ifCmdIsntBuiltInThenReturn0){
 	//then
 	dASSERT_EQ( builtin_cmd(argv), 0 );
 }
+
 
 #endif
 /*--------------------------*/

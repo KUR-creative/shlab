@@ -1,0 +1,7 @@
+#
+# trace04.txt - Run a background job.
+#
+/bin/echo -e tsh> ./myspin 2 \046
+./myspin 2 &
+/bin/echo -e myspin 2 &  was bg job, so this str must be printed in no delay
+/bin/echo -e if not, it's not bg job rather fg job...!
