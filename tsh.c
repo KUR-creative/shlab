@@ -173,20 +173,25 @@ void eval(char* cmdline)
 {
 	char*		argv[MAXARGS];	
 	int			isBg, isBuiltin;
-	int			pid;
+	pid_t		pid;
 	sigset_t	maskAll, maskOne, prevOne;
 
-	
+	// mask for all blocking
+	Sigfillset(&maskAll);
+	// mask for SIGCHLD blocking
+	Sigemptyset(&maskOne);
+	Sigaddset(&maskOne, SIGCHLD);
 	
 	isBg = parseline(cmdline, argv);
-	isBuiltin = builtin_cmd(argv);	// run builtin or ret: 0
+	isBuiltin = builtin_cmd(argv);	// run builtin or ret: 
 	
 	if(! isBuiltin){
-		int pid = Fork();
+		Sigprocmask(SIG_BLOCK, &maskOne, &prevOne); // block SIGCHLD
 					puts("fg");
-		if(pid == 0){
+		if((pid = Fork()) == 0){
+			// unblock SIGCHLD in child
+			Sigprocmask(SIG_SETMASK, &prevOne, NULL); 
 			Execve(argv[0], argv, environ);
-			exit(0);
 		}else{
 			int status;
 			waitpid(pid, &status, 0);
