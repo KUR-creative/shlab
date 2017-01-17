@@ -2,4 +2,5 @@
 # trace02.txt - Process builtin quit command.
 #
 quit
+/bin/ls
 WAIT
