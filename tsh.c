@@ -88,6 +88,11 @@ void usage(void);
 typedef void handler_t(int);
 //handler_t *Signal(int signum, handler_t *handler);
 
+//mine
+volatile sig_atomic_t dbgpid = 0; //나중에 jobs로 교체될 것임sig int.
+void utest(void);
+#define REDCOL  "\x1b[31m"
+#define ENDCOL	"\x1b[0m"
 /*
  * main - The shell's main routine 
  */
@@ -133,6 +138,7 @@ int main(int argc, char **argv)
     /* Initialize the job list */
     initjobs(jobs);
 
+							utest();
     /* Execute the shell's read/eval loop */
     while (1) {
 		/* Read command line */
@@ -150,7 +156,7 @@ int main(int argc, char **argv)
 		/* Evaluate the command line */
 		eval(cmdline);
 		fflush(stdout);
-		fflush(stdout);
+		fflush(stdout);		
     } 
 
     exit(0); /* control never reaches here */
@@ -193,10 +199,11 @@ void eval(char* cmdline)
 			Sigprocmask(SIG_SETMASK, &prevOne, NULL); 
 			Execve(argv[0], argv, environ);
 		}
-		else{
-			if(isBg){
-
-			}else{
+		else{			dbgpid = pid;
+			// unblock SIGCHLD for reaping 
+			Sigprocmask(SIG_SETMASK, &prevOne, NULL); 
+			if(! isBg){
+				//explicitly wait fg job
 				int status;
 				waitpid(pid, &status, 0);
 						//puts("fg reaped!");
@@ -306,6 +313,7 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
+	//sio_puts(">>>> yolo! <<<<\n");
     return;
 }
 
@@ -316,6 +324,7 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
+	sio_puts(">>>> sig int! <<<<");
     return;
 }
 
@@ -550,6 +559,39 @@ void sigquit_handler(int sig)
     exit(1);
 }
 
+void utest(void)
+{
+	//FG child가 reap되는지 확인한다.
+	puts("\n--------shMustReapFgChild--------");
+	int status, result;
+	eval("./myspin 1 ");
+			//system("ps -ef|grep defunct");
+	result = waitpid(dbgpid, &status, WNOHANG);
+				printf(">>WNOHANG? %d \n", result);
+			sleep(2);
+			//system("ps -ef|grep defunct");
+	result = waitpid(dbgpid, &status, WNOHANG);
+				printf(">>WNOHANG? %d \n", result);
+	printf("dbgpid = %d\n", dbgpid);
+		if(result == dbgpid)
+			printf("["REDCOL"child is not reaped!"ENDCOL"]");
+	puts("\n--------------------------------");
+
+	puts("\n--------shMustReapBgChild--------");
+	eval("./myspin 1 & ");
+			//system("ps -ef|grep defunct");
+	result = waitpid(dbgpid, &status, WNOHANG);
+				printf(">>WNOHANG? %d \n", result);
+			int time = sleep(120);
+			printf("unelapsed time = %d \n", time);
+			//system("ps -ef|grep defunct");
+	result = waitpid(dbgpid, &status, WNOHANG);
+				printf(">>WNOHANG? %d \n", result);
+	printf("dbgpid = %d\n", dbgpid);
+		if(result == dbgpid)
+			printf("["REDCOL"child is not reaped!"ENDCOL"]");
+	puts("\n--------------------------------");
+}
 
 /*--------------------------*/
 #ifndef RELEASE
@@ -568,6 +610,9 @@ void sigquit_handler(int sig)
 	cr_assert_eq((actual),(expected),\
 	#actual":%d != %d:"#expected"\n",(int32_t)(actual),(int32_t)(expected))
 
+#define dASSERT_NEQ(actual,expected)\
+	cr_assert_neq((actual),(expected),\
+	#actual":%d == %d:"#expected" -must be not equal\n",(int32_t)(actual),(int32_t)(expected))
 
 #define dEXPECT_EQ(actual,expected)\
 	cr_expect_eq((actual),(expected),\
@@ -589,25 +634,47 @@ Test(builtin_cmd, ifCmdIsntBuiltInThenReturn0){
 	dASSERT_EQ( builtin_cmd(argv), 0 );
 }
 
-//why it doesn't work?
-Test(sigchld, test, .signal = SIGCHLD){
-	pid_t	pid;
-	printf("parent group: %d \n", getpgrp());
-	printf("parent pid: %d\n", getpid());
+/*
+// why signal handler cannot be called???
+// can't test signal with criterion!
+Test(eval, shMustReapBgChild){
+	sigset_t	maskAll, maskOne, prevOne;
+	// mask for all blocking
+	Sigfillset(&maskAll);
+	// mask for SIGCHLD blocking
+	Sigemptyset(&maskOne);
+	Sigaddset(&maskOne, SIGCHLD);
+	Sigprocmask(SIG_SETMASK, &prevOne, NULL); 
 
-	if((pid = fork()) < 0){
-		fprintf(stderr, "fork error: %s \n", strerror(errno));
-		exit(0);
-	}
-
-	if(pid == 0){
-		printf("	child group:%d  \n", getpgrp());
-		printf("	child pid: %d\n", getpid());
-		printf("	its parent: %d\n", getppid());
-	}else{
-		printf("its child: %d\n", pid);
-	}
+	// waitpid를 WNOHANG와 함께 쓰면
+	// wait할 child가 없으면 ret: 0
+	// wait할 child가 있으면 ret: 그 child의 pid
+	int status, result;
+	eval("./myspin 1 & ");
+			system("ps -ef|grep defunct");
+	result = waitpid(dbgpid, &status, WNOHANG);
+				printf(">>WNOHANG? %d \n", result);
+			sleep(2);
+			system("ps -ef|grep defunct");
+	result = waitpid(dbgpid, &status, WNOHANG);
+				printf(">>WNOHANG? %d \n", result);
+	printf("dbgpid = %d\n", dbgpid);
+	dASSERT_NEQ(result, dbgpid);
 }
 
+Test(eval, shMustReapFgChild){
+	int status, result;
+	eval("./myspin 1 ");
+			system("ps -ef|grep defunct");
+	result = waitpid(dbgpid, &status, WNOHANG);
+				printf(">>WNOHANG? %d \n", result);
+			sleep(2);
+			system("ps -ef|grep defunct");
+	result = waitpid(dbgpid, &status, WNOHANG);
+				printf(">>WNOHANG? %d \n", result);
+	printf("dbgpid = %d\n", dbgpid);
+	dASSERT_NEQ(result, dbgpid);
+}
+*/
 #endif
 /*--------------------------*/
