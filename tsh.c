@@ -187,15 +187,20 @@ void eval(char* cmdline)
 	
 	if(! isBuiltin){
 		Sigprocmask(SIG_BLOCK, &maskOne, &prevOne); // block SIGCHLD
-					puts("fg");
+						//puts("fg");
 		if((pid = Fork()) == 0){
 			// unblock SIGCHLD in child
 			Sigprocmask(SIG_SETMASK, &prevOne, NULL); 
 			Execve(argv[0], argv, environ);
-		}else{
-			int status;
-			waitpid(pid, &status, 0);
-					puts("fg reaped!");
+		}
+		else{
+			if(isBg){
+
+			}else{
+				int status;
+				waitpid(pid, &status, 0);
+						//puts("fg reaped!");
+			}
 		}
 	}
     return;
@@ -574,6 +579,7 @@ void sigquit_handler(int sig)
 
 
 Test(builtin_cmd, ifCmdIsntBuiltInThenReturn0){
+	cr_skip_test("nope");
 	//given
 	char*	cmdline			= "nope";
 	char*	argv[MAXARGS];	
@@ -583,6 +589,25 @@ Test(builtin_cmd, ifCmdIsntBuiltInThenReturn0){
 	dASSERT_EQ( builtin_cmd(argv), 0 );
 }
 
+//why it doesn't work?
+Test(sigchld, test, .signal = SIGCHLD){
+	pid_t	pid;
+	printf("parent group: %d \n", getpgrp());
+	printf("parent pid: %d\n", getpid());
+
+	if((pid = fork()) < 0){
+		fprintf(stderr, "fork error: %s \n", strerror(errno));
+		exit(0);
+	}
+
+	if(pid == 0){
+		printf("	child group:%d  \n", getpgrp());
+		printf("	child pid: %d\n", getpid());
+		printf("	its parent: %d\n", getppid());
+	}else{
+		printf("its child: %d\n", pid);
+	}
+}
 
 #endif
 /*--------------------------*/

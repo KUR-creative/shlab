@@ -23,7 +23,7 @@ all: $(FILES)
 handin:
 	cp tsh.c $(HANDINDIR)/$(TEAM)-$(VERSION)-tsh.c
 
-no:
+xt:
 	# -------------------------------1--------------------------------
 	######## ref ########
 	make rtest01
@@ -49,8 +49,8 @@ t: tsh.c
 	make test04
 
 
-nt: tsh.c
-	$(CC) $(CFLAGS) -o tsh tsh.c -lcriterion
+at: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS)  -lcriterion
 	./tsh
 
 tsh-release: tsh.c

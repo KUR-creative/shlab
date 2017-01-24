@@ -12,6 +12,10 @@ test3
 test4
 	impl bg jobs.
 	but how to print ref's output? just use printf???
+
+	t3,t4 test:
+	1. explicit wait test: sh never wait bg explicitly
+	2. reaping test: how?
 test5
 test6
 test7
