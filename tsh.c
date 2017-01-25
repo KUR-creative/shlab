@@ -314,7 +314,19 @@ void waitfg(pid_t pid)
 void sigchld_handler(int sig) 
 {
 	//sio_puts(">>>> yolo! <<<<\n");
-    return;
+	int			oldErrno = errno;
+	pid_t		pid;
+	//sigset_t	
+	while((pid = waitpid(-1, NULL, 0)) > 0){
+		sio_puts("reaping child:");
+		sio_putl(pid);
+		sio_puts("\n");
+	}
+	if(errno != ECHILD){
+		Sio_error("sigchld_handler>waitpid error");
+	}
+
+	errno = oldErrno;
 }
 
 /* 
@@ -564,6 +576,7 @@ void utest(void)
 	//FG child가 reap되는지 확인한다.
 	puts("\n--------shMustReapFgChild--------");
 	int status, result;
+	eval("/bin/echo utest:shMustReapFgChild");
 	eval("./myspin 1 ");
 			//system("ps -ef|grep defunct");
 	result = waitpid(dbgpid, &status, WNOHANG);
@@ -578,6 +591,7 @@ void utest(void)
 	puts("\n--------------------------------");
 
 	puts("\n--------shMustReapBgChild--------");
+	eval("/bin/echo utest:shMustReapBgChild");
 	eval("./myspin 1 & ");
 			//system("ps -ef|grep defunct");
 	result = waitpid(dbgpid, &status, WNOHANG);
