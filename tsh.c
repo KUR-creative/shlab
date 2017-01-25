@@ -1,8 +1,8 @@
 /* 
  * tsh - A tiny shell program with job control
  * 
- * <Put your name and login ID here>
- */
+* <Put your name and login ID here>
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -91,8 +91,16 @@ typedef void handler_t(int);
 //mine
 volatile sig_atomic_t dbgpid = 0; //나중에 jobs로 교체될 것임sig int.
 void utest(void);
-#define REDCOL  "\x1b[31m"
+void deleteAllJobs(struct job_t jobs[]);
+int isAllZero(struct job_t* ptr, size_t size);
+#define RED		"\x1b[31m"
+#define YELLOW	"\x1b[33m"
 #define ENDCOL	"\x1b[0m"
+#define cputs(col,str)	puts(col str ENDCOL)
+
+#define ASSERT(cond,failstr)	if((cond) != 1) cputs(RED,failstr)
+#define ASSERT_EQ(a,b,failstr)	if((a) != (b)) cputs(RED,failstr)
+
 /*
  * main - The shell's main routine 
  */
@@ -313,12 +321,12 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
-	//sio_puts(">>>> yolo! <<<<\n");
+	//sio_puts(">>>> SIG CHLD HANDLER <<<<\n");
 	int			oldErrno = errno;
 	pid_t		pid;
 	//sigset_t	
 	while((pid = waitpid(-1, NULL, 0)) > 0){
-		sio_puts("reaping child:");
+		sio_puts("	reaping child:");
 		sio_putl(pid);
 		sio_puts("\n");
 	}
@@ -387,6 +395,8 @@ int maxjid(struct job_t *jobs)
 }
 
 /* addjob - Add a job to the job list */
+// ret: 0 error
+// ret: 1 success
 int addjob(struct job_t *jobs, pid_t pid, int state, char *cmdline) 
 {
     int i;
@@ -527,39 +537,7 @@ void usage(void)
     exit(1);
 }
 
-/*
- * unix_error - unix-style error routine
-void unix_error(char *msg)
-{
-    fprintf(stdout, "%s: %s\n", msg, strerror(errno));
-    exit(1);
-}
- */
 
-/*
- * app_error - application-style error routine
-void app_error(char *msg)
-{
-    fprintf(stdout, "%s\n", msg);
-    exit(1);
-}
- */
-
-/*
- * Signal - wrapper for the sigaction function
-handler_t *Signal(int signum, handler_t *handler) 
-{
-    struct sigaction action, old_action;
-
-    action.sa_handler = handler;  
-    sigemptyset(&action.sa_mask); // block sigs of type being handled 
-    action.sa_flags = SA_RESTART; // restart syscalls if possible 
-
-    if (sigaction(signum, &action, &old_action) < 0)
-	unix_error("Signal error");
-    return (old_action.sa_handler);
-}
-*/
 
 /*
  * sigquit_handler - The driver program can gracefully terminate the
@@ -571,42 +549,111 @@ void sigquit_handler(int sig)
     exit(1);
 }
 
+// my own tet function...
 void utest(void)
 {
+/* 
 	//FG child가 reap되는지 확인한다.
-	puts("\n--------shMustReapFgChild--------");
+	cputs(YELLOW,"\n--------shMustReapFgChild--------");
 	int status, result;
-	eval("/bin/echo utest:shMustReapFgChild");
 	eval("./myspin 1 ");
 			//system("ps -ef|grep defunct");
 	result = waitpid(dbgpid, &status, WNOHANG);
-				printf(">>WNOHANG? %d \n", result);
+			printf(">>WNOHANG? %d \n", result);
 			sleep(2);
 			//system("ps -ef|grep defunct");
 	result = waitpid(dbgpid, &status, WNOHANG);
-				printf(">>WNOHANG? %d \n", result);
+			printf(">>WNOHANG? %d \n", result);
 	printf("dbgpid = %d\n", dbgpid);
 		if(result == dbgpid)
-			printf("["REDCOL"child is not reaped!"ENDCOL"]");
-	puts("\n--------------------------------");
+			printf("["RED"child is not reaped!"ENDCOL"]");
+	cputs(YELLOW,"\n--------------------------------");
 
-	puts("\n--------shMustReapBgChild--------");
-	eval("/bin/echo utest:shMustReapBgChild");
+	cputs(YELLOW,"\n--------shMustReapBgChild--------");
 	eval("./myspin 1 & ");
 			//system("ps -ef|grep defunct");
 	result = waitpid(dbgpid, &status, WNOHANG);
-				printf(">>WNOHANG? %d \n", result);
+			printf(">>WNOHANG? %d \n", result);
 			int time = sleep(120);
 			printf("unelapsed time = %d \n", time);
 			//system("ps -ef|grep defunct");
 	result = waitpid(dbgpid, &status, WNOHANG);
-				printf(">>WNOHANG? %d \n", result);
+			printf(">>WNOHANG? %d \n", result);
 	printf("dbgpid = %d\n", dbgpid);
 		if(result == dbgpid)
-			printf("["REDCOL"child is not reaped!"ENDCOL"]");
-	puts("\n--------------------------------");
+			printf("["RED"child is not reaped!"ENDCOL"]");
+	cputs(YELLOW,"\n--------------------------------");
+
+	cputs(YELLOW,"\n--------shMustReapMultipleBgChildren--------");
+	//TODO: use job list and WNOHANG -> print red fail str.
+	eval("./myspin 1 & ");
+	eval("./myspin 1 & ");
+	eval("./myspin 1 & ");
+	eval("./myspin 1 & ");
+	system("ps");
+	sleep(2);
+	system("ps");
+	cputs(YELLOW,"\n--------------------------------");
+
+	cputs(YELLOW,"\n--------왜 bg후에 CR을 eval하면 SEGFAULT?--------");
+	eval("./myspin 1 & ");
+	eval("\n");
+	cputs(YELLOW,"\n--------------------------------");
+*/
+
+	cputs(YELLOW,"\n-----add job into jobs(reference)-----");
+	pid_t tpid = 11;
+	addjob(jobs, tpid, UNDEF, "test");
+	listjobs(jobs);
+	deletejob(jobs, tpid);	//clear
+	listjobs(jobs);	
+	cputs(YELLOW,"\n--------------------------------");
+
+	cputs(YELLOW,"\n------exec lasting bg job will be added jobs------");
+	eval("./myspin 1 &");
+	cputs(YELLOW,"\n--------------------------------");
+
+	cputs(YELLOW,"\n--------deleteAllJobs del all job(s) in jobs--------");
+	addjob(jobs, 1, FG, "test");
+	addjob(jobs, 2, FG, "test");
+	addjob(jobs, 3, FG, "test");
+	listjobs(jobs);
+	deleteAllJobs(jobs);
+	ASSERT( isAllZero(jobs,MAXJOBS), "jobs isn't cleared!");
+	cputs(YELLOW,"\n--------------------------------");
+
+	//is jobs all deleted?
+	cputs(YELLOW,"\n--------when all zero, isAllZero return 1--------");
+	struct job_t arr[5] = {{0},};
+	if(isAllZero(arr,5) != 1)
+		cputs(RED,"it is all zero memory!");
+	cputs(YELLOW,"\n--------------------------------");
+
+	cputs(YELLOW,"\n--------when not all zero, isAllZero return 0-------");
+	struct job_t arr2[3] = {{5},};
+	if(isAllZero(arr2,3) != 0)
+		cputs(RED,"it is not all zero memory!");
+	cputs(YELLOW,"\n--------------------------------");
+
+	//int a = 1, b = 0;
+	//ASSERT_EQ(a,b,"not eq");
+
+	eval("quit\n"); // end of test.
 }
 
+// mine
+void deleteAllJobs(struct job_t jobs[])
+{
+
+}
+
+int isAllZero(struct job_t* arr, size_t size)
+{
+	struct job_t zeroArr[size]; 
+	size_t memsize = size*sizeof(struct job_t);
+	memset(zeroArr, 0, memsize);
+	return !memcmp((void*)arr, (void*)zeroArr, memsize);
+}
 /*--------------------------*/
 #ifndef RELEASE
 

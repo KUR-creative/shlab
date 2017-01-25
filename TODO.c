@@ -15,10 +15,28 @@ test4
 
 	t3,t4 test:
 	//1. explicit wait test: sh never wait bg explicitly
-	2. reaping test: use WNOHANG! 
-		can't use criterion. use my on test functions...
-		now WRITE SIGNAL HANDLER.
+	//2. reaping test: use WNOHANG! 
+		//can't use criterion. use my on test functions...
+		//now WRITE SIGNAL HANDLER.
+	3. bg job allocation info output
+		[jobnum] (pid) cmdline
+	4.
+	why SEGFAULT occurred?
+		maybe input(interrupt) when execute sigchld handler code.
+		-> block signal?
+
+	why waiting explicitly? 
+		아마 WNOHANG을 안 쓰므로 다 기다린다고 그러는 것이다...
+		-> use different loop.
+		-> using WNOHANG waitpid. but.. 
+		-> need to implement joblist and operations.
 test5
+	job list
+	when eval, add job into jobs.
+		func: clearjobs
+		//func: isAllZero
+	when child terminated, del child from jobs.
+	tsh> jobs   (interface)
 test6
 test7
 test8
@@ -31,6 +49,9 @@ test14
 test15
 test16
 
+mt own tiny tester library
+//ASSERT
+//ASSERT_EQ
 
 maybe I can check job list.. to test something -> code it!
 
