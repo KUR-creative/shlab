@@ -93,14 +93,15 @@ volatile sig_atomic_t dbgpid = 0; //나중에 jobs로 교체될 것임sig int.
 void utest(void);
 void deleteAllJobs(struct job_t jobs[]);
 int isAllZero(struct job_t* ptr, size_t size);
-int areAllJobsCleared(struct job_t* jobs, size_t size);
+int areJobsCleared(struct job_t* jobs, int num);
 #define RED		"\x1b[31m"
 #define YELLOW	"\x1b[33m"
 #define ENDCOL	"\x1b[0m"
 #define cputs(col,str)	puts(col str ENDCOL)
 
-#define ASSERT(cond,failstr)	if((cond) != 1) cputs(RED,failstr)
-#define ASSERT_EQ(a,b,failstr)	if((a) != (b)) cputs(RED,failstr)
+#define ASSERT(cond,failstr)		if((cond) != 1) cputs(RED,failstr)
+#define ASSERT_NOT(cond,failstr)	if((cond) == 1) cputs(RED,failstr)
+#define ASSERT_EQ(a,b,failstr)		if((a) != (b)) cputs(RED,failstr)
 
 /*
  * main - The shell's main routine 
@@ -187,7 +188,7 @@ int main(int argc, char **argv)
 void eval(char* cmdline) 
 {
 	char*		argv[MAXARGS];	
-	int			isBg, isBuiltin;
+	int			isBg, isBuiltin, state;
 	pid_t		pid;
 	sigset_t	maskAll, maskOne, prevOne;
 
@@ -198,26 +199,32 @@ void eval(char* cmdline)
 	Sigaddset(&maskOne, SIGCHLD);
 	
 	isBg = parseline(cmdline, argv);
+	state = isBg + 1; //BG = 1+1, FG = 0+1;
 	isBuiltin = builtin_cmd(argv);	// run builtin or ret: 
 	
 	if(! isBuiltin){
 		Sigprocmask(SIG_BLOCK, &maskOne, &prevOne); // block SIGCHLD
-						//puts("fg");
 		if((pid = Fork()) == 0){
 			// unblock SIGCHLD in child
 			Sigprocmask(SIG_SETMASK, &prevOne, NULL); 
 			Execve(argv[0], argv, environ);
 		}
-		else{			dbgpid = pid;
-			// unblock SIGCHLD for reaping 
-			Sigprocmask(SIG_SETMASK, &prevOne, NULL); 
-			if(! isBg){
-				//explicitly wait fg job
-				int status;
-				waitpid(pid, &status, 0);
-						//puts("fg reaped!");
-			}
+				dbgpid = pid;
+
+		//job allocation!
+		Sigprocmask(SIG_BLOCK, &maskAll, NULL); // block all
+		if( addjob(jobs, pid, state, cmdline) == 0 ){ 
+			cputs(RED, "addjob error!");
 		}
+		Sigprocmask(SIG_SETMASK, &prevOne, NULL);// unblock SIGCHLD to reap
+
+		if(! isBg){
+			//explicitly wait fg job
+			int status;
+			waitpid(pid, &status, 0);
+					//puts("fg reaped!");
+		}
+		
 	}
     return;
 }
@@ -228,6 +235,10 @@ void eval(char* cmdline)
  * Characters enclosed in single quotes are treated as a single
  * argument.  Return true if the user has requested a BG job, false if
  * the user has requested a FG job.  
+ * 
+ * ret: 
+ * 0	fg
+ * 1	bg
  */
 int parseline(const char *cmdline, char **argv) 
 {
@@ -282,11 +293,19 @@ int parseline(const char *cmdline, char **argv)
 /* 
  * builtin_cmd - If the user has typed a built-in command then execute
  *    it immediately.  
+ *
+ *ret:
+ * 0	not a bulitin cmd
+ * 1	this is bulitin cmd.
  */
 int builtin_cmd(char **argv) 
 {
 	if( strcmp("quit", argv[0]) == 0 ){
 		exit(0);
+	}
+	if( strcmp("jobs", argv[0]) == 0 ){
+		listjobs(jobs);
+		return 1;
 	}
     return 0;     /* not a builtin command */
 }
@@ -325,11 +344,17 @@ void sigchld_handler(int sig)
 	//sio_puts(">>>> SIG CHLD HANDLER <<<<\n");
 	int			oldErrno = errno;
 	pid_t		pid;
-	//sigset_t	
+	sigset_t	maskAll, prevAll;
+
+	Sigfillset(&maskAll);
 	while((pid = waitpid(-1, NULL, 0)) > 0){
 		sio_puts("	reaping child:");
 		sio_putl(pid);
 		sio_puts("\n");
+
+		Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
+		deletejob(jobs, pid);
+		Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 	}
 	if(errno != ECHILD){
 		Sio_error("sigchld_handler>waitpid error");
@@ -553,12 +578,12 @@ void sigquit_handler(int sig)
 // my own tet function...
 void utest(void)
 {
-/* 
 	//FG child가 reap되는지 확인한다.
 	cputs(YELLOW,"\n--------shMustReapFgChild--------");
 	int status, result;
 	eval("./myspin 1 ");
 			//system("ps -ef|grep defunct");
+			sleep(2);
 	result = waitpid(dbgpid, &status, WNOHANG);
 			printf(">>WNOHANG? %d \n", result);
 			sleep(2);
@@ -573,10 +598,9 @@ void utest(void)
 	cputs(YELLOW,"\n--------shMustReapBgChild--------");
 	eval("./myspin 1 & ");
 			//system("ps -ef|grep defunct");
+			sleep(2);
 	result = waitpid(dbgpid, &status, WNOHANG);
 			printf(">>WNOHANG? %d \n", result);
-			int time = sleep(120);
-			printf("unelapsed time = %d \n", time);
 			//system("ps -ef|grep defunct");
 	result = waitpid(dbgpid, &status, WNOHANG);
 			printf(">>WNOHANG? %d \n", result);
@@ -587,20 +611,19 @@ void utest(void)
 
 	cputs(YELLOW,"\n--------shMustReapMultipleBgChildren--------");
 	//TODO: use job list and WNOHANG -> print red fail str.
-	eval("./myspin 1 & ");
-	eval("./myspin 1 & ");
-	eval("./myspin 1 & ");
-	eval("./myspin 1 & ");
+	eval("./myspin 1 & \n");
+	eval("./myspin 1 & \n");
+	eval("./myspin 1 & \n");
+	eval("./myspin 1 & \n");
 	system("ps");
 	sleep(2);
 	system("ps");
 	cputs(YELLOW,"\n--------------------------------");
-
+/* 
 	cputs(YELLOW,"\n--------왜 bg후에 CR을 eval하면 SEGFAULT?--------");
-	eval("./myspin 1 & ");
+	eval("./myspin 1 & \n");
 	eval("\n");
 	cputs(YELLOW,"\n--------------------------------");
-*/
 
 	cputs(YELLOW,"\n-----add job into jobs(reference)-----");
 	pid_t tpid = 11;
@@ -608,11 +631,8 @@ void utest(void)
 	listjobs(jobs);
 	deletejob(jobs, tpid);	//clear
 	listjobs(jobs);	
-	cputs(YELLOW,"\n--------------------------------");
+	cputs(YELLOW,"\n----------------------------------------------|");
 
-	cputs(YELLOW,"\n------exec lasting bg job will be added jobs------");
-	eval("./myspin 1 &");
-	cputs(YELLOW,"\n--------------------------------");
 
 	cputs(YELLOW,"\n--------deleteAllJobs del all job(s) in jobs--------");
 	addjob(jobs, 1, FG, "test");
@@ -620,34 +640,74 @@ void utest(void)
 	addjob(jobs, 3, FG, "test");
 	listjobs(jobs);
 	deleteAllJobs(jobs);
-	ASSERT_EQ( areAllJobsCleared(jobs, MAXJOBS), 1, "some uncleared jobs left.");
+	ASSERT_EQ( areJobsCleared(jobs, MAXJOBS), 1, "some uncleared jobs left.");
 	//because clearjob func, deleteAllJobs but jobs are not zero...
 	//clearjob clear cmdline with just one '\0' allocation.
-	cputs(YELLOW,"\n--------------------------------");
-
-	cputs(YELLOW,"\n--------areAllJobsCleared--------");
-	
-	cputs(YELLOW,"\n--------------------------------");
+	cputs(YELLOW,"\n----------------------------------------------|");
 
 	//is jobs all deleted?
 	cputs(YELLOW,"\n--------when all zero, isAllZero return 1--------");
 	struct job_t arr[5] = {{0},};
 	if(isAllZero(arr,5) != 1)
 		cputs(RED,"it is all zero memory!");
-	cputs(YELLOW,"\n--------------------------------");
+	cputs(YELLOW,"\n----------------------------------------------|");
 
 	cputs(YELLOW,"\n--------when not all zero, isAllZero return 0-------");
 	struct job_t arr2[3] = {{5},};
 	if(isAllZero(arr2,3) != 0)
 		cputs(RED,"it is not all zero memory!");
-	cputs(YELLOW,"\n--------------------------------");
+	cputs(YELLOW,"\n----------------------------------------------|");
 
 	cputs(YELLOW,"\n--------not all zero, isAllZero ret = 0--------");
 	struct job_t arr3[10];
 	arr3[9].jid = 10;
 	ASSERT_EQ( isAllZero(arr3, 10), 0, "incorrect: arr3 is not all zero." );
-	cputs(YELLOW,"\n--------------------------------"); 
-	eval("quit\n"); // end of test.
+	cputs(YELLOW,"\n----------------------------------------------|");
+
+	//are job add operations correct?
+	cputs(YELLOW,"\n------exec lasting bg job will be added jobs------");
+	eval("./myspin 1 &\n");
+	ASSERT_NOT( areJobsCleared(jobs,1), "./myspin wasn't allocated." );
+	ASSERT_EQ( jobs[0].state, BG, "state of bg job must be BG=2" );
+	cputs(YELLOW,"\n----------------------------------------------|");
+
+	cputs(YELLOW,"\n--------more bg jobs and allocations--------");
+	deleteAllJobs(jobs);
+	for(int i = 0; i < 10; i++){
+		eval("./myspin 2 &\n");
+	}
+	for(int i = 0; i < 10; i++){
+		ASSERT_EQ( jobs[i].state, BG, "state of bg job must be BG=2" );
+	}
+	cputs(YELLOW,"\n----------------------------------------------|");
+
+cputs(YELLOW,"\n----fg ended then sigchld ?----");
+	eval("/bin/echo [fg job end.. then?] \n");
+cputs(YELLOW,"\n----------------------------------------------|");
+
+cputs(YELLOW,"\n----when fg job ended, that job must be deleted----");
+	//for(int i = 0; i < MAXJOBS; i++){
+		//printf("%d: %d %d %d %s \n", 
+				//i,
+				//jobs[i].pid, jobs[i].jid, 
+				//jobs[i].state, jobs[i].cmdline);
+	//}
+	deleteAllJobs(jobs);
+	eval("/bin/echo delete job test\n");
+	printf(">> %d <<", areJobsCleared(jobs, MAXJOBS));
+	ASSERT( areJobsCleared(jobs, MAXJOBS), "ended job must be deleted.");
+
+	//for(int i = 0; i < MAXJOBS; i++){
+		//printf("%d: %d %d %d %s \n", 
+				//i,
+				//jobs[i].pid, jobs[i].jid, 
+				//jobs[i].state, jobs[i].cmdline);
+	//}
+cputs(YELLOW,"\n----------------------------------------------|");
+
+*/
+	// end of test.
+	eval("quit\n"); 
 }
 
 // mine
@@ -666,24 +726,31 @@ int isAllZero(struct job_t* arr, size_t size)
 	return !memcmp((void*)arr, (void*)zeroArr, memsize);
 }
 
-int areAllJobsCleared(struct job_t* arr, size_t size)
+int areJobsCleared(struct job_t* arr, int num)
 {
-	//for(int i = 0; i < MAXJOBS; i++){
-		//printf("%d %d %d %s \n", 
-				//jobs[i].pid, jobs[i].jid, 
-				//jobs[i].state, jobs[i].cmdline);
-	//}
 	for(int i = 0; i < MAXJOBS; i++){
+		printf("%d: %d %d %d %s \n", 
+				i,
+				jobs[i].pid, jobs[i].jid, 
+				jobs[i].state, jobs[i].cmdline);
+	}
+
+	for(int i = 0; i < num; i++){
 		if(jobs[i].pid != 0){
+					printf("?? %d ??", i);
+					printf("pid: %d ??", jobs[i].pid);
 			return 0;
 		}
 		if(jobs[i].jid != 0){
+					puts("jid");
 			return 0;
 		}
 		if(jobs[i].state != 0){
+					puts("state");
 			return 0;
 		}
 		if(jobs[i].cmdline[0] != '\0'){
+					puts("cmd");
 			return 0;
 		}
 	}

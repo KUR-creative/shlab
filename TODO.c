@@ -32,11 +32,23 @@ test4
 		-> need to implement joblist and operations.
 test5
 	job list
+		//addjob
+		//if jobs are full? : job won't be allocated. already implemented.
+		delete job when job process terminated. using sigchld_handler
+		why [0] job never deleted??
+->			maybe I have to change sigchld_handler... using jobs array.
+->				and change fg reaping test(use jobs too)
 	when eval, add job into jobs.
+		more state job operations.
+			//FG
+			//BG
+			ST
 		//func: deleteAllJobs
 		//func: isAllZero
 	when child terminated, del child from jobs.
-	tsh> jobs   (interface)
+	//tsh> jobs   (interface)
+	deleteAllJobs jobs기준으로 sigchld handler에서 job을 삭제한다면
+	이 함수 사용시 문제가 생길 수 있다.
 test6
 test7
 test8
