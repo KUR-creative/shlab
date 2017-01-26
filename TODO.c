@@ -33,7 +33,7 @@ test4
 test5
 	job list
 	when eval, add job into jobs.
-		func: clearjobs
+		//func: deleteAllJobs
 		//func: isAllZero
 	when child terminated, del child from jobs.
 	tsh> jobs   (interface)

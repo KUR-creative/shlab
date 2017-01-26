@@ -93,6 +93,7 @@ volatile sig_atomic_t dbgpid = 0; //나중에 jobs로 교체될 것임sig int.
 void utest(void);
 void deleteAllJobs(struct job_t jobs[]);
 int isAllZero(struct job_t* ptr, size_t size);
+int areAllJobsCleared(struct job_t* jobs, size_t size);
 #define RED		"\x1b[31m"
 #define YELLOW	"\x1b[33m"
 #define ENDCOL	"\x1b[0m"
@@ -619,7 +620,13 @@ void utest(void)
 	addjob(jobs, 3, FG, "test");
 	listjobs(jobs);
 	deleteAllJobs(jobs);
-	ASSERT( isAllZero(jobs,MAXJOBS), "jobs isn't cleared!");
+	ASSERT_EQ( areAllJobsCleared(jobs, MAXJOBS), 1, "some uncleared jobs left.");
+	//because clearjob func, deleteAllJobs but jobs are not zero...
+	//clearjob clear cmdline with just one '\0' allocation.
+	cputs(YELLOW,"\n--------------------------------");
+
+	cputs(YELLOW,"\n--------areAllJobsCleared--------");
+	
 	cputs(YELLOW,"\n--------------------------------");
 
 	//is jobs all deleted?
@@ -635,16 +642,20 @@ void utest(void)
 		cputs(RED,"it is not all zero memory!");
 	cputs(YELLOW,"\n--------------------------------");
 
-	//int a = 1, b = 0;
-	//ASSERT_EQ(a,b,"not eq");
-
+	cputs(YELLOW,"\n--------not all zero, isAllZero ret = 0--------");
+	struct job_t arr3[10];
+	arr3[9].jid = 10;
+	ASSERT_EQ( isAllZero(arr3, 10), 0, "incorrect: arr3 is not all zero." );
+	cputs(YELLOW,"\n--------------------------------"); 
 	eval("quit\n"); // end of test.
 }
 
 // mine
 void deleteAllJobs(struct job_t jobs[])
 {
-
+	for(int i = 0; i < MAXJOBS; i++){
+		clearjob( &jobs[i] );
+	}
 }
 
 int isAllZero(struct job_t* arr, size_t size)
@@ -653,6 +664,30 @@ int isAllZero(struct job_t* arr, size_t size)
 	size_t memsize = size*sizeof(struct job_t);
 	memset(zeroArr, 0, memsize);
 	return !memcmp((void*)arr, (void*)zeroArr, memsize);
+}
+
+int areAllJobsCleared(struct job_t* arr, size_t size)
+{
+	//for(int i = 0; i < MAXJOBS; i++){
+		//printf("%d %d %d %s \n", 
+				//jobs[i].pid, jobs[i].jid, 
+				//jobs[i].state, jobs[i].cmdline);
+	//}
+	for(int i = 0; i < MAXJOBS; i++){
+		if(jobs[i].pid != 0){
+			return 0;
+		}
+		if(jobs[i].jid != 0){
+			return 0;
+		}
+		if(jobs[i].state != 0){
+			return 0;
+		}
+		if(jobs[i].cmdline[0] != '\0'){
+			return 0;
+		}
+	}
+	return 1;
 }
 /*--------------------------*/
 #ifndef RELEASE
