@@ -37,7 +37,9 @@ test5
 		delete job when job process terminated. using sigchld_handler
 		why [0] job never deleted??
 ->			maybe I have to change sigchld_handler... using jobs array.
-->				and change fg reaping test(use jobs too)
+->			change fg reaping test(use jobs too)
+				is fg reaped correctly?
+				is fg job in jobs deleted?
 	when eval, add job into jobs.
 		more state job operations.
 			//FG

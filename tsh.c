@@ -102,6 +102,7 @@ int areJobsCleared(struct job_t* jobs, int num);
 #define ASSERT(cond,failstr)		if((cond) != 1) cputs(RED,failstr)
 #define ASSERT_NOT(cond,failstr)	if((cond) == 1) cputs(RED,failstr)
 #define ASSERT_EQ(a,b,failstr)		if((a) != (b)) cputs(RED,failstr)
+#define ASSERT_NEQ(a,b,failstr)		if((a) == (b)) cputs(RED,failstr)
 
 /*
  * main - The shell's main routine 
@@ -219,10 +220,7 @@ void eval(char* cmdline)
 		Sigprocmask(SIG_SETMASK, &prevOne, NULL);// unblock SIGCHLD to reap
 
 		if(! isBg){
-			//explicitly wait fg job
-			int status;
-			waitpid(pid, &status, 0);
-					//puts("fg reaped!");
+			// use Sigsuspend!! to wait fg jobs explicitly!
 		}
 		
 	}
@@ -579,35 +577,35 @@ void sigquit_handler(int sig)
 void utest(void)
 {
 	//FG child가 reap되는지 확인한다.
-	cputs(YELLOW,"\n--------shMustReapFgChild--------");
-	int status, result;
-	eval("./myspin 1 ");
+cputs(YELLOW,"\n--------shMustReapFgChild--------");
+	int result;
+	eval("./myspin 2 ");
+	result = jobs[0].pid;
+			printf("fg job pid: %d \n", result);
+			system("ps -ef|grep defunct");
+			listjobs(jobs);
 			//system("ps -ef|grep defunct");
 			sleep(2);
-	result = waitpid(dbgpid, &status, WNOHANG);
+			system("ps -ef|grep defunct");
+	result = waitpid(jobs[0].pid, NULL, WNOHANG);
+			listjobs(jobs);
 			printf(">>WNOHANG? %d \n", result);
-			sleep(2);
-			//system("ps -ef|grep defunct");
-	result = waitpid(dbgpid, &status, WNOHANG);
-			printf(">>WNOHANG? %d \n", result);
-	printf("dbgpid = %d\n", dbgpid);
-		if(result == dbgpid)
-			printf("["RED"child is not reaped!"ENDCOL"]");
-	cputs(YELLOW,"\n--------------------------------");
+	printf("job pid = %d\n", jobs[0].pid);
 
-	cputs(YELLOW,"\n--------shMustReapBgChild--------");
+	ASSERT_NEQ( jobs[0].pid, result, RED"child is not reaped!" );
+	ASSERT( areJobsCleared(jobs, MAXJOBS), "jobs are not cleared!" );
+cputs(YELLOW,"\n----------------------------------------------|");
+
+cputs(YELLOW,"\n--------shMustReapBgChild--------");
 	eval("./myspin 1 & ");
 			//system("ps -ef|grep defunct");
 			sleep(2);
-	result = waitpid(dbgpid, &status, WNOHANG);
-			printf(">>WNOHANG? %d \n", result);
 			//system("ps -ef|grep defunct");
-	result = waitpid(dbgpid, &status, WNOHANG);
+	result = waitpid(dbgpid, NULL, WNOHANG);
 			printf(">>WNOHANG? %d \n", result);
 	printf("dbgpid = %d\n", dbgpid);
-		if(result == dbgpid)
-			printf("["RED"child is not reaped!"ENDCOL"]");
-	cputs(YELLOW,"\n--------------------------------");
+	result = waitpid(jobs[0].pid, NULL, WNOHANG);
+cputs(YELLOW,"\n----------------------------------------------|");
 
 	cputs(YELLOW,"\n--------shMustReapMultipleBgChildren--------");
 	//TODO: use job list and WNOHANG -> print red fail str.
