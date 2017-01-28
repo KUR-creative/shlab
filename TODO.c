@@ -14,7 +14,8 @@ test3
 	is it ok with bg jobs?	need to implement bg & fg 
 
 test4
-	why it prints in reverse order? 
+	why it prints in arbitrary order? 
+	because fork and execve echo. need to explicitly wait fg jobs..!
 
 	t3,t4 test:
 	//1. explicit wait test: sh never wait bg explicitly

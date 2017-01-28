@@ -89,7 +89,8 @@ typedef void handler_t(int);
 //handler_t *Signal(int signum, handler_t *handler);
 
 //mine
-volatile sig_atomic_t dbgpid = 0; //나중에 jobs로 교체될 것임sig int.
+volatile sig_atomic_t spid = 0; // shared pid (shared by main and handler)
+// is gpid really needed?
 void utest(void);
 void deleteAllJobs(struct job_t jobs[]);
 int isAllZero(struct job_t* ptr, size_t size);
@@ -191,38 +192,42 @@ void eval(char* cmdline)
 	char*		argv[MAXARGS];	
 	int			isBg, isBuiltin, state;
 	pid_t		pid;
-	sigset_t	maskAll, maskOne, prevOne;
+	sigset_t	maskAll, maskChild, prev;
 
 	// mask for all blocking
 	Sigfillset(&maskAll);
 	// mask for SIGCHLD blocking
-	Sigemptyset(&maskOne);
-	Sigaddset(&maskOne, SIGCHLD);
+	Sigemptyset(&maskChild);
+	Sigaddset(&maskChild, SIGCHLD);
 	
 	isBg = parseline(cmdline, argv);
 	state = isBg + 1; //BG = 1+1, FG = 0+1;
 	isBuiltin = builtin_cmd(argv);	// run builtin or ret: 
 	
 	if(! isBuiltin){
-		Sigprocmask(SIG_BLOCK, &maskOne, &prevOne); // block SIGCHLD
+		Sigprocmask(SIG_BLOCK, &maskChild, &prev); // block SIGCHLD
 		if((pid = Fork()) == 0){
 			// unblock SIGCHLD in child
-			Sigprocmask(SIG_SETMASK, &prevOne, NULL); 
+			Sigprocmask(SIG_SETMASK, &prev, NULL); 
 			Execve(argv[0], argv, environ);
 		}
-				dbgpid = pid;
 
 		//job allocation!
 		Sigprocmask(SIG_BLOCK, &maskAll, NULL); // block all
 		if( addjob(jobs, pid, state, cmdline) == 0 ){ 
 			cputs(RED, "addjob error!");
 		}
-		Sigprocmask(SIG_SETMASK, &prevOne, NULL);// unblock SIGCHLD to reap
 
+		// wait fg job explicitly.
+		spid = 0;
 		if(! isBg){
-			// use Sigsuspend!! to wait fg jobs explicitly!
+			while(! spid){ // or.. jobs?
+				Sigsuspend(&prev);
+			}
 		}
-		
+
+		Sigprocmask(SIG_SETMASK, &prev, NULL);// unblock SIGCHLD to reap
+		//fg?? how do I... order?
 	}
     return;
 }
@@ -344,17 +349,16 @@ void sigchld_handler(int sig)
 {
 	//sio_puts(">>>> SIG CHLD HANDLER <<<<\n");
 	int			oldErrno = errno;
-	pid_t		pid;
 	sigset_t	maskAll, prevAll;
 
 	Sigfillset(&maskAll);
-	while((pid = waitpid(-1, NULL, 0)) > 0){
+	while((spid = waitpid(-1, NULL, 0)) > 0){
 		sio_puts("	reaping child:");
-		sio_putl(pid);
+		sio_putl(spid);
 		sio_puts("\n");
 
 		Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
-		deletejob(jobs, pid);
+		deletejob(jobs, spid);
 		Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 	}
 	if(errno != ECHILD){
@@ -620,7 +624,7 @@ cputs(YELLOW,"\n--------shMustReapMultipleBgChildren--------");
 	//TODO: use job list and WNOHANG -> print red fail str.
 	eval("./myspin 1 & \n");
 	eval("./myspin 1 & \n");
-	eval("./myspin 1 & \n");
+	evashared l("./myspin 1 & \n");
 	eval("./myspin 1 & \n");
 	system("ps");
 	sleep(2);

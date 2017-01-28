@@ -3,7 +3,9 @@
 #
 /bin/echo -e tsh> ./myspin 2 \046
 ./myspin 2 &
-/bin/echo -e myspin 2 &  was bg job, so this str must be printed in no delay
-/bin/echo -e if not, it's not bg job rather fg job...!
-/bin/echo -e wtf?
-/bin/echo -e why it prints in reverse order?
+/bin/echo -e 1: myspin 2 &  was bg job, so this str must be printed in no delay
+/bin/echo -e 2: if not, it's not bg job rather fg job...!
+/bin/echo -e 3: wtf?
+/bin/echo -e 4: why it prints in reverse order?
+/bin/echo -e 5: wtf?
+/bin/echo -e 6: even not reversed? arbitary order??? 
