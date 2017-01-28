@@ -23,11 +23,12 @@ all: $(FILES)
 handin:
 	cp tsh.c $(HANDINDIR)/$(TEAM)-$(VERSION)-tsh.c
 
-ut: tsh.c
+tu: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	./tsh
 
-xt:
+t12: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------1--------------------------------
 	######## ref ########
 	make rtest01
@@ -46,13 +47,14 @@ t3: tsh.c
 	make rtest03
 	######## mine ########
 	make test03
+
 t: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------4--------------------------------
 	######## ref ########
 	make rtest04
 	######## mine ########
 	make test04
-
 
 t5: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE

@@ -225,9 +225,12 @@ void eval(char* cmdline)
 				Sigsuspend(&prev);
 			}
 		}
+		else{ // print bg job allocation info 
+			struct job_t* tmpJob = getjobpid(jobs, pid);
+			printf("[%d] (%d) %s", tmpJob->jid, tmpJob->pid, tmpJob->cmdline);
+		}
 
-		Sigprocmask(SIG_SETMASK, &prev, NULL);// unblock SIGCHLD to reap
-		//fg?? how do I... order?
+		Sigprocmask(SIG_SETMASK, &prev, NULL);// unblock SIGCHLD to reap bg
 	}
     return;
 }
@@ -581,10 +584,18 @@ void sigquit_handler(int sig)
     exit(1);
 }
 
-// my own tet function...
+// my own test function...
 void utest(void)
 {
+cputs(YELLOW,"\n----print bg info----");
+	eval("/bin/echo print bg info & \n");
+cputs(YELLOW,"\n----------------------------------------------|");
+
 /*
+cputs(YELLOW,"\n----eval('&') is exceptional----");
+	eval("&\n");
+cputs(YELLOW,"\n----------------------------------------------|");
+
 cputs(YELLOW,"\n----builtin_cmd input= \\n then segfault? wtf?----");
 	eval("\n");
 cputs(YELLOW,"\n----------------------------------------------|");
@@ -624,30 +635,27 @@ cputs(YELLOW,"\n--------shMustReapMultipleBgChildren--------");
 	//TODO: use job list and WNOHANG -> print red fail str.
 	eval("./myspin 1 & \n");
 	eval("./myspin 1 & \n");
-	evashared l("./myspin 1 & \n");
+	eval("./myspin 1 & \n");
 	eval("./myspin 1 & \n");
 	system("ps");
 	sleep(2);
 	system("ps");
 cputs(YELLOW,"\n----------------------------------------------|");
-*/
 
 cputs(YELLOW,"\n--------왜 bg후에 CR을 eval하면 SEGFAULT?--------");
 	eval("\n");
 	eval("./myspin 1 & \n");
 cputs(YELLOW,"\n--------------------------------");
 
-/* 
-	cputs(YELLOW,"\n-----add job into jobs(reference)-----");
+cputs(YELLOW,"\n-----add job into jobs(reference)-----");
 	pid_t tpid = 11;
 	addjob(jobs, tpid, UNDEF, "test");
 	listjobs(jobs);
 	deletejob(jobs, tpid);	//clear
 	listjobs(jobs);	
-	cputs(YELLOW,"\n----------------------------------------------|");
+cputs(YELLOW,"\n----------------------------------------------|");
 
-
-	cputs(YELLOW,"\n--------deleteAllJobs del all job(s) in jobs--------");
+cputs(YELLOW,"\n--------deleteAllJobs del all job(s) in jobs--------");
 	addjob(jobs, 1, FG, "test");
 	addjob(jobs, 2, FG, "test");
 	addjob(jobs, 3, FG, "test");
@@ -656,35 +664,35 @@ cputs(YELLOW,"\n--------------------------------");
 	ASSERT_EQ( areJobsCleared(jobs, MAXJOBS), 1, "some uncleared jobs left.");
 	//because clearjob func, deleteAllJobs but jobs are not zero...
 	//clearjob clear cmdline with just one '\0' allocation.
-	cputs(YELLOW,"\n----------------------------------------------|");
+cputs(YELLOW,"\n----------------------------------------------|");
 
-	//is jobs all deleted?
-	cputs(YELLOW,"\n--------when all zero, isAllZero return 1--------");
+//is jobs all deleted?
+cputs(YELLOW,"\n--------when all zero, isAllZero return 1--------");
 	struct job_t arr[5] = {{0},};
 	if(isAllZero(arr,5) != 1)
 		cputs(RED,"it is all zero memory!");
-	cputs(YELLOW,"\n----------------------------------------------|");
+cputs(YELLOW,"\n----------------------------------------------|");
 
-	cputs(YELLOW,"\n--------when not all zero, isAllZero return 0-------");
+cputs(YELLOW,"\n--------when not all zero, isAllZero return 0-------");
 	struct job_t arr2[3] = {{5},};
 	if(isAllZero(arr2,3) != 0)
 		cputs(RED,"it is not all zero memory!");
-	cputs(YELLOW,"\n----------------------------------------------|");
+cputs(YELLOW,"\n----------------------------------------------|");
 
-	cputs(YELLOW,"\n--------not all zero, isAllZero ret = 0--------");
+cputs(YELLOW,"\n--------not all zero, isAllZero ret = 0--------");
 	struct job_t arr3[10];
 	arr3[9].jid = 10;
 	ASSERT_EQ( isAllZero(arr3, 10), 0, "incorrect: arr3 is not all zero." );
-	cputs(YELLOW,"\n----------------------------------------------|");
+cputs(YELLOW,"\n----------------------------------------------|");
 
-	//are job add operations correct?
-	cputs(YELLOW,"\n------exec lasting bg job will be added jobs------");
+//are job add operations correct?
+cputs(YELLOW,"\n------exec lasting bg job will be added jobs------");
 	eval("./myspin 1 &\n");
 	ASSERT_NOT( areJobsCleared(jobs,1), "./myspin wasn't allocated." );
 	ASSERT_EQ( jobs[0].state, BG, "state of bg job must be BG=2" );
-	cputs(YELLOW,"\n----------------------------------------------|");
+cputs(YELLOW,"\n----------------------------------------------|");
 
-	cputs(YELLOW,"\n--------more bg jobs and allocations--------");
+cputs(YELLOW,"\n--------more bg jobs and allocations--------");
 	deleteAllJobs(jobs);
 	for(int i = 0; i < 10; i++){
 		eval("./myspin 2 &\n");
@@ -692,7 +700,7 @@ cputs(YELLOW,"\n--------------------------------");
 	for(int i = 0; i < 10; i++){
 		ASSERT_EQ( jobs[i].state, BG, "state of bg job must be BG=2" );
 	}
-	cputs(YELLOW,"\n----------------------------------------------|");
+cputs(YELLOW,"\n----------------------------------------------|");
 
 cputs(YELLOW,"\n----fg ended then sigchld ?----");
 	eval("/bin/echo [fg job end.. then?] \n");
