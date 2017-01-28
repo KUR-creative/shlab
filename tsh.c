@@ -149,7 +149,7 @@ int main(int argc, char **argv)
     /* Initialize the job list */
     initjobs(jobs);
 
-							utest();
+							//utest();
     /* Execute the shell's read/eval loop */
     while (1) {
 		/* Read command line */
@@ -298,6 +298,9 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
+	if(argv[0] == NULL){ // input "\n" 
+		return 1;
+	}
 	if( strcmp("quit", argv[0]) == 0 ){
 		exit(0);
 	}
@@ -368,7 +371,8 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
-	sio_puts(">>>> sig int! <<<<");
+	//sio_puts(">>>> sig int! <<<<");
+	exit(0);
     return;
 }
 
@@ -576,6 +580,10 @@ void sigquit_handler(int sig)
 // my own tet function...
 void utest(void)
 {
+/*
+cputs(YELLOW,"\n----builtin_cmd input= \\n then segfault? wtf?----");
+	eval("\n");
+cputs(YELLOW,"\n----------------------------------------------|");
 	//FG child가 reap되는지 확인한다.
 cputs(YELLOW,"\n--------shMustReapFgChild--------");
 	int result;
@@ -592,22 +600,23 @@ cputs(YELLOW,"\n--------shMustReapFgChild--------");
 			printf(">>WNOHANG? %d \n", result);
 	printf("job pid = %d\n", jobs[0].pid);
 
-	ASSERT_NEQ( jobs[0].pid, result, RED"child is not reaped!" );
+	ASSERT_NEQ( jobs[0].pid, result, "child is not reaped!" );
 	ASSERT( areJobsCleared(jobs, MAXJOBS), "jobs are not cleared!" );
 cputs(YELLOW,"\n----------------------------------------------|");
 
 cputs(YELLOW,"\n--------shMustReapBgChild--------");
-	eval("./myspin 1 & ");
+	eval("./myspin 1 &\n");
 			//system("ps -ef|grep defunct");
 			sleep(2);
 			//system("ps -ef|grep defunct");
-	result = waitpid(dbgpid, NULL, WNOHANG);
 			printf(">>WNOHANG? %d \n", result);
-	printf("dbgpid = %d\n", dbgpid);
 	result = waitpid(jobs[0].pid, NULL, WNOHANG);
+
+	ASSERT_NEQ( jobs[0].pid, result, "child is not reaped!" );
+	ASSERT( areJobsCleared(jobs, MAXJOBS), "jobs are not cleared!" );
 cputs(YELLOW,"\n----------------------------------------------|");
 
-	cputs(YELLOW,"\n--------shMustReapMultipleBgChildren--------");
+cputs(YELLOW,"\n--------shMustReapMultipleBgChildren--------");
 	//TODO: use job list and WNOHANG -> print red fail str.
 	eval("./myspin 1 & \n");
 	eval("./myspin 1 & \n");
@@ -616,13 +625,15 @@ cputs(YELLOW,"\n----------------------------------------------|");
 	system("ps");
 	sleep(2);
 	system("ps");
-	cputs(YELLOW,"\n--------------------------------");
-/* 
-	cputs(YELLOW,"\n--------왜 bg후에 CR을 eval하면 SEGFAULT?--------");
-	eval("./myspin 1 & \n");
-	eval("\n");
-	cputs(YELLOW,"\n--------------------------------");
+cputs(YELLOW,"\n----------------------------------------------|");
+*/
 
+cputs(YELLOW,"\n--------왜 bg후에 CR을 eval하면 SEGFAULT?--------");
+	eval("\n");
+	eval("./myspin 1 & \n");
+cputs(YELLOW,"\n--------------------------------");
+
+/* 
 	cputs(YELLOW,"\n-----add job into jobs(reference)-----");
 	pid_t tpid = 11;
 	addjob(jobs, tpid, UNDEF, "test");
@@ -726,12 +737,12 @@ int isAllZero(struct job_t* arr, size_t size)
 
 int areJobsCleared(struct job_t* arr, int num)
 {
-	for(int i = 0; i < MAXJOBS; i++){
-		printf("%d: %d %d %d %s \n", 
-				i,
-				jobs[i].pid, jobs[i].jid, 
-				jobs[i].state, jobs[i].cmdline);
-	}
+	//for(int i = 0; i < MAXJOBS; i++){
+		//printf("%d: %d %d %d %s \n", 
+				//i,
+				//jobs[i].pid, jobs[i].jid, 
+				//jobs[i].state, jobs[i].cmdline);
+	//}
 
 	for(int i = 0; i < num; i++){
 		if(jobs[i].pid != 0){

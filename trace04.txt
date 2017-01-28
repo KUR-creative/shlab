@@ -5,3 +5,5 @@
 ./myspin 2 &
 /bin/echo -e myspin 2 &  was bg job, so this str must be printed in no delay
 /bin/echo -e if not, it's not bg job rather fg job...!
+/bin/echo -e wtf?
+/bin/echo -e why it prints in reverse order?

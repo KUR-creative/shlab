@@ -3,15 +3,18 @@ what's going on this project?
 OBJECTIVE
 all test passed
 
+**
+just input '\n' then segfault? wtf?
+
 //test1	//maybe...
 //test2
 	//tsh need to deal with 'quit' cmd
 test3
 	//do foreground job - how to test?
 	is it ok with bg jobs?	need to implement bg & fg 
+
 test4
-	impl bg jobs.
-	but how to print ref's output? just use printf???
+	why it prints in reverse order? 
 
 	t3,t4 test:
 	//1. explicit wait test: sh never wait bg explicitly
@@ -21,10 +24,10 @@ test4
 	3. bg job allocation info output
 		[jobnum] (pid) cmdline
 	4.
-	why SEGFAULT occurred?
-		maybe input(interrupt) when execute sigchld handler code.
-		-> block signal?
+	//why SEGFAULT occurred?
+		//"\n" 같은 거는 argv[0] = NULL이 들어가.
 
+	5.
 	why waiting explicitly? 
 		아마 WNOHANG을 안 쓰므로 다 기다린다고 그러는 것이다...
 		-> use different loop.
@@ -35,11 +38,11 @@ test5
 		//addjob
 		//if jobs are full? : job won't be allocated. already implemented.
 		delete job when job process terminated. using sigchld_handler
-		why [0] job never deleted??
-->			maybe I have to change sigchld_handler... using jobs array.
-->			change fg reaping test(use jobs too)
-				is fg reaped correctly?
-				is fg job in jobs deleted?
+		//why [0] job never deleted??
+			change sigchld_handler... using jobs array.
+			//change fg reaping test(use jobs too)
+				//is fg reaped correctly?
+				//is fg job in jobs deleted?
 	when eval, add job into jobs.
 		more state job operations.
 			//FG
