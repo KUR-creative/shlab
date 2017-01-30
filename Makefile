@@ -40,7 +40,7 @@ t12: tsh.c
 	######## mine ########
 	make test02
 
-t3: tsh.c
+t: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------3--------------------------------
 	######## ref ########
