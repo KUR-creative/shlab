@@ -40,7 +40,7 @@ t12: tsh.c
 	######## mine ########
 	make test02
 
-t: tsh.c
+t3: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------3--------------------------------
 	######## ref ########
@@ -56,13 +56,21 @@ t4: tsh.c
 	######## mine ########
 	make test04
 
-t: tsh.c
+t5: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------5--------------------------------
 	######## ref ########
 	make rtest05
 	######## mine ########
 	make test05
+
+t: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
+	# -------------------------------5--------------------------------
+	######## ref ########
+	make rtest06
+	######## mine ########
+	make test06
 
 at: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS)  -lcriterion
