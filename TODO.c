@@ -66,10 +66,16 @@ test5
 		//FG
 		//BG
 	//tsh> jobs   (interface)
-		implement jobs command actually!
+		//implement jobs command actually!
 		it's already implemented, but error: by sigchld_handler code
 	deleteAllJobs jobs기준으로 sigchld handler에서 job을 삭제한다면
 	이 함수 사용시 문제가 생길 수 있다.
+
+**sigchld_handler 변경으로 인해 고쳐질 수 있는 현상(테스트)들
+		t3, t4는 eval만 가지고는 테스트할 수 없다.. 유닛테스트가 아냐.
+	trace04: print echo ouptuts in no delay(delay after first echo)
+	trace05: command jobs actually prints jobs.
+	utest: (crash test)
 test6
 test7
 test8

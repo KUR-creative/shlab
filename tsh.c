@@ -356,9 +356,9 @@ void sigchld_handler(int sig)
 
 	Sigfillset(&maskAll);
 	while((spid = waitpid(-1, NULL, 0)) > 0){
-		sio_puts("	reaping child:");
-		sio_putl(spid);
-		sio_puts("\n");
+		//sio_puts("	reaping child:");
+		//sio_putl(spid);
+		//sio_puts("\n");
 
 		Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
 		deletejob(jobs, spid);
@@ -587,6 +587,7 @@ void sigquit_handler(int sig)
 // my own test function...
 void utest(void)
 {
+
 cputs(YELLOW,"\n----print bg info----");
 	eval("/bin/echo print bg info & \n");
 cputs(YELLOW,"\n----------------------------------------------|");
@@ -600,6 +601,7 @@ cputs(YELLOW,"\n----builtin_cmd input= \\n then segfault? wtf?----");
 	eval("\n");
 cputs(YELLOW,"\n----------------------------------------------|");
 	//FG child가 reap되는지 확인한다.
+*/
 cputs(YELLOW,"\n--------shMustReapFgChild--------");
 	int result;
 	eval("./myspin 2 ");
@@ -637,16 +639,10 @@ cputs(YELLOW,"\n--------shMustReapMultipleBgChildren--------");
 	eval("./myspin 1 & \n");
 	eval("./myspin 1 & \n");
 	eval("./myspin 1 & \n");
-	system("ps");
 	sleep(2);
-	system("ps");
+	ASSERT( areJobsCleared(jobs, MAXJOBS), "jobs are not cleared!" );
 cputs(YELLOW,"\n----------------------------------------------|");
-
-cputs(YELLOW,"\n--------왜 bg후에 CR을 eval하면 SEGFAULT?--------");
-	eval("\n");
-	eval("./myspin 1 & \n");
-cputs(YELLOW,"\n--------------------------------");
-
+/*
 cputs(YELLOW,"\n-----add job into jobs(reference)-----");
 	pid_t tpid = 11;
 	addjob(jobs, tpid, UNDEF, "test");
@@ -685,6 +681,7 @@ cputs(YELLOW,"\n--------not all zero, isAllZero ret = 0--------");
 	ASSERT_EQ( isAllZero(arr3, 10), 0, "incorrect: arr3 is not all zero." );
 cputs(YELLOW,"\n----------------------------------------------|");
 
+*/
 //are job add operations correct?
 cputs(YELLOW,"\n------exec lasting bg job will be added jobs------");
 	eval("./myspin 1 &\n");
@@ -724,9 +721,7 @@ cputs(YELLOW,"\n----when fg job ended, that job must be deleted----");
 				//jobs[i].pid, jobs[i].jid, 
 				//jobs[i].state, jobs[i].cmdline);
 	//}
-cputs(YELLOW,"\n----------------------------------------------|");
 
-*/
 	// end of test.
 	eval("quit\n"); 
 }

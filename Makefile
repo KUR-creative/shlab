@@ -48,7 +48,7 @@ t3: tsh.c
 	######## mine ########
 	make test03
 
-t: tsh.c
+t4: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------4--------------------------------
 	######## ref ########
@@ -56,7 +56,7 @@ t: tsh.c
 	######## mine ########
 	make test04
 
-t5: tsh.c
+t: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------5--------------------------------
 	######## ref ########
