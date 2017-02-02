@@ -11,6 +11,6 @@ SLEEP 3
 /bin/echo tsh> jobs
 jobs
 
-/bin/echo tsh> ./myint 2 
+/bin/echo tsh> ./myint 10
 ./myint 2
 

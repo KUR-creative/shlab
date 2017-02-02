@@ -207,8 +207,9 @@ void eval(char* cmdline)
 	if(! isBuiltin){
 		Sigprocmask(SIG_BLOCK, &maskChild, &prev); // block SIGCHLD
 		if((pid = Fork()) == 0){
-			// unblock SIGCHLD in child
+			// set child's own process group id.
 			Setpgid(0, 0);
+			// unblock SIGCHLD in child
 			Sigprocmask(SIG_SETMASK, &prev, NULL); 
 			Execve(argv[0], argv, environ);
 		}
@@ -398,20 +399,22 @@ void sigint_handler(int sig)
 {
 	//sio_puts(">>> sigint! <<<");
 	pid_t		pid;
-	sigset_t	maskAll, prevAll;
+	//sigset_t	maskAll, prevAll;
 
 	// mask for all blocking
-	Sigfillset(&maskAll);
+	//Sigfillset(&maskAll);
 
 	// get pid from job list
 	//Sigprocmask(SIG_BLOCK, &maskAll, &prevAll); // block all
 	pid = fgpid(jobs);
 	if(pid != 0){
 		Kill(pid, SIGINT);
-		sio_puts("	kill now fg job: ");
-		sio_putl(pid);
+		int jid = pid2jid(pid);
+		sio_puts("Job");
+		sio_puts(" [");	sio_putl(jid);	sio_puts("]");
+		sio_puts(" (");	sio_putl(pid);	sio_puts(")");
+		sio_puts(" terminated by signal 2 \n");
 	}
-	sio_puts("\n");
 	//Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 
 	//exit(0);
@@ -425,6 +428,15 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
+	pid_t pid = fgpid(jobs);
+	if(pid != 0){
+		Kill(pid, SIGSTOP);
+		int jid = pid2jid(pid);
+		sio_puts("Job");
+		sio_puts(" [");	sio_putl(jid);	sio_puts("]");
+		sio_puts(" (");	sio_putl(pid);	sio_puts(")");
+		sio_puts(" stopped by signal 20 \n");
+	}
     return;
 }
 
