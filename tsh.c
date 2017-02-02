@@ -573,6 +573,7 @@ int pid2jid(pid_t pid)
 }
 
 /* listjobs - Print the job list */
+
 void listjobs(struct job_t *jobs) 
 {
     int i;
