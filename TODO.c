@@ -40,7 +40,7 @@ test4
 	6.eval("&") is exceptional.// is it ok?
 
 test5
-	job list
+	//job list
 		//addjob
 		//if jobs are full? : job won't be allocated. already implemented.
 		//delete job when job process terminated. using sigchld_handler
@@ -70,7 +70,14 @@ test5
 	//trace04: print echo ouptuts in no delay(delay after first echo)
 	//trace05: command jobs actually prints jobs.
 	//utest: (crash test)
+
 test6
+	implement sigint_handler.
+		//don't die
+		//kill fg job.
+		kill fg job only 
+			kill ONLY fg job. not bg jobs.
+			-> delete fg job from jobs.
 test7
 test8
 test9

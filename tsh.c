@@ -94,7 +94,7 @@ volatile sig_atomic_t spid = 0; // shared pid (shared by main and handler)
 void utest(void);
 void deleteAllJobs(struct job_t jobs[]);
 int isAllZero(struct job_t* ptr, size_t size);
-int areJobsCleared(struct job_t* jobs, int num);
+int areJobsEmpty(struct job_t* jobs);
 #define RED		"\x1b[31m"
 #define YELLOW	"\x1b[33m"
 #define ENDCOL	"\x1b[0m"
@@ -227,10 +227,12 @@ void eval(char* cmdline)
 		}
 		else{ // print bg job allocation info 
 			struct job_t* tmpJob = getjobpid(jobs, pid);
-			printf("[%d] (%d) %s", tmpJob->jid, tmpJob->pid, tmpJob->cmdline);
+			printf("[%d] (%d) %s", 
+					tmpJob->jid, tmpJob->pid, tmpJob->cmdline);
 		}
 
-		Sigprocmask(SIG_SETMASK, &prev, NULL);// unblock SIGCHLD to reap bg
+		// unblock signals to reap bg
+		Sigprocmask(SIG_SETMASK, &prev, NULL);
 	}
     return;
 }
@@ -355,33 +357,26 @@ void sigchld_handler(int sig)
 	sigset_t	maskAll, prevAll;
 
 	Sigfillset(&maskAll);
-	//while((spid = waitpid(-1, NULL, WNOHANG)) > 0){
-		//sio_puts("	reaping child:");
-		//sio_putl(spid);
-		//sio_puts("\n");
-//
-		//Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
-		//deletejob(jobs, spid);
-		//Sigprocmask(SIG_SETMASK, &prevAll, NULL);
-	//}
+	//sio_puts(" -------- \n");
 	for(int i = 0; i < MAXJOBS; i++){
 		pid_t tpid = jobs[i].pid; //temp pid
 		if(tpid != 0){
 			spid = waitpid(tpid, NULL, WNOHANG);
-			//if(spid > 0){
-				//sio_puts("\treaping child:");
-				//sio_putl(spid);
-			//}else{
-				//sio_puts("\ttry to reap: ");
-				//sio_putl(tpid);
-				//sio_puts(" but can't: ");
-				//sio_putl(spid);
-			//}
-			//sio_puts("\n");
+			if(spid > 0){
+				sio_puts("\treaping child:");
+				sio_putl(spid);
+			}else{
+				sio_puts("\ttry to reap: ");
+				sio_putl(tpid);
+				sio_puts(" but can't: ");
+				sio_putl(spid);
+			}
+			sio_puts("\n");
+			//delete tpid job from job list!
+			Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
+			deletejob(jobs, spid);
+			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 		}
-		Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
-		deletejob(jobs, spid);
-		Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 	}
 
 	//if(errno != ECHILD){
@@ -399,8 +394,23 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
-	//sio_puts(">>>> sig int! <<<<");
-	exit(0);
+	//sio_puts(">>> sigint! <<<");
+	pid_t		pid;
+	sigset_t	maskAll, prevAll;
+
+	// mask for all blocking
+	Sigfillset(&maskAll);
+
+	// get pid from job list
+	//Sigprocmask(SIG_BLOCK, &maskAll, &prevAll); // block all
+	pid = fgpid(jobs);
+	kill(pid, SIGINT);
+	sio_puts("	kill now fg job: ");
+	sio_putl(pid);
+	sio_puts("\n");
+	//Sigprocmask(SIG_SETMASK, &prevAll, NULL);
+
+	//exit(0);
     return;
 }
 
@@ -638,7 +648,7 @@ cputs(YELLOW,"\n--------shMustReapFgChild--------");
 	printf("job pid = %d\n", jobs[0].pid);
 
 	ASSERT_NEQ( jobs[0].pid, result, "child is not reaped!" );
-	ASSERT( areJobsCleared(jobs, MAXJOBS), "jobs are not cleared!" );
+	ASSERT( areJobsEmpty(jobs), "jobs are not cleared!" );
 cputs(YELLOW,"\n----------------------------------------------|");
 
 cputs(YELLOW,"\n--------shMustReapBgChild--------");
@@ -650,7 +660,7 @@ cputs(YELLOW,"\n--------shMustReapBgChild--------");
 	result = waitpid(jobs[0].pid, NULL, WNOHANG);
 
 	ASSERT_NEQ( jobs[0].pid, result, "child is not reaped!" );
-	ASSERT( areJobsCleared(jobs, MAXJOBS), "jobs are not cleared!" );
+	ASSERT( areJobsEmpty(jobs), "jobs are not cleared!" );
 cputs(YELLOW,"\n----------------------------------------------|");
 
 */
@@ -660,7 +670,7 @@ cputs(YELLOW,"\n--------shMustReapMultipleBgChildren--------");
 	eval("./myspin 1 & \n");
 	eval("./myspin 1 & \n");
 	sleep(10);	//sleep isn't work!
-	//ASSERT( areJobsCleared(jobs, MAXJOBS), "jobs are not cleared!" );
+	//ASSERT( areJobsEmpty(jobs), "jobs are not cleared!" );
 	//but... so... is this test wrong? maybe?
 cputs(YELLOW,"\n----------------------------------------------|");
 /*
@@ -678,7 +688,7 @@ cputs(YELLOW,"\n--------deleteAllJobs del all job(s) in jobs--------");
 	addjob(jobs, 3, FG, "test");
 	listjobs(jobs);
 	deleteAllJobs(jobs);
-	ASSERT_EQ( areJobsCleared(jobs, MAXJOBS), 1, "some uncleared jobs left.");
+	ASSERT_EQ( areJobsEmpty(jobs), 1, "some uncleared jobs left.");
 	//because clearjob func, deleteAllJobs but jobs are not zero...
 	//clearjob clear cmdline with just one '\0' allocation.
 cputs(YELLOW,"\n----------------------------------------------|");
@@ -706,16 +716,17 @@ cputs(YELLOW,"\n----------------------------------------------|");
 //are job add operations correct?
 cputs(YELLOW,"\n------exec lasting bg job will be added jobs------");
 	eval("./myspin 1 &\n");
-	ASSERT_NOT( areJobsCleared(jobs,1), "./myspin wasn't allocated." );
+	ASSERT_NOT( areJobsEmpty(jobs), "./myspin wasn't allocated." );
 	ASSERT_EQ( jobs[0].state, BG, "state of bg job must be BG=2" );
 cputs(YELLOW,"\n----------------------------------------------|");
 
 cputs(YELLOW,"\n--------more bg jobs and allocations--------");
 	deleteAllJobs(jobs);
-	for(int i = 0; i < 10; i++){
-		eval("./myspin 2 &\n");
+	for(int i = 0; i < 5; i++){
+		eval("./myspin 1 &\n");
+		// why this child never be reaped????? why???
 	}
-	for(int i = 0; i < 10; i++){
+	for(int i = 0; i < 5; i++){
 		ASSERT_EQ( jobs[i].state, BG, "state of bg job must be BG=2" );
 	}
 cputs(YELLOW,"\n----------------------------------------------|");
@@ -733,8 +744,9 @@ cputs(YELLOW,"\n----when fg job ended, that job must be deleted----");
 	//}
 	deleteAllJobs(jobs);
 	eval("/bin/echo delete job test\n");
-	printf(">> %d <<", areJobsCleared(jobs, MAXJOBS));
-	ASSERT( areJobsCleared(jobs, MAXJOBS), "ended job must be deleted.");
+	printf(">> %d <<", areJobsEmpty(jobs));
+	ASSERT( areJobsEmpty(jobs), "ended job must be deleted.");
+cputs(YELLOW,"\n----------------------------------------------|");
 
 	//for(int i = 0; i < MAXJOBS; i++){
 		//printf("%d: %d %d %d %s \n", 
@@ -743,6 +755,30 @@ cputs(YELLOW,"\n----when fg job ended, that job must be deleted----");
 				//jobs[i].state, jobs[i].cmdline);
 	//}
 
+	// sigint test
+cputs(YELLOW,"\n----sigint kill only fg jobs, not bg jobs.----");
+	eval("./myspin 10 &\n");
+	ASSERT_NOT( areJobsEmpty(jobs), "bg job didn't allocated in jobs!" );
+	eval("./myspin 10 &\n");
+	eval("./myspin 10 &\n");
+	pid_t thisPid = getpid();
+
+	puts("");
+	listjobs(jobs);
+
+	//eval("/bin/ps\n");
+	kill(0, 2); //sigint
+
+	puts("");
+	listjobs(jobs);
+	ASSERT_NOT( areJobsEmpty(jobs), "sigint killed bg jobs! incorrect!" );
+
+cputs(YELLOW,"\n----------------------------------------------|");
+
+	// all terminated children has been reaped?
+	eval("/bin/ps\n");
+
+	while(1);
 	// end of test.
 	eval("quit\n"); 
 }
@@ -763,7 +799,10 @@ int isAllZero(struct job_t* arr, size_t size)
 	return !memcmp((void*)arr, (void*)zeroArr, memsize);
 }
 
-int areJobsCleared(struct job_t* arr, int num)
+// ret
+// 1	job arr is empty.
+// 0	job arr is not empty.
+int areJobsEmpty(struct job_t* arr)
 {
 	//for(int i = 0; i < MAXJOBS; i++){
 		//printf("%d: %d %d %d %s \n", 
@@ -771,23 +810,22 @@ int areJobsCleared(struct job_t* arr, int num)
 				//jobs[i].pid, jobs[i].jid, 
 				//jobs[i].state, jobs[i].cmdline);
 	//}
-
-	for(int i = 0; i < num; i++){
+	for(int i = 0; i < MAXJOBS; i++){
 		if(jobs[i].pid != 0){
-					printf("?? %d ??", i);
-					printf("pid: %d ??", jobs[i].pid);
+					//printf("?? %d ??", i);
+					//printf("pid: %d ??", jobs[i].pid);
 			return 0;
 		}
 		if(jobs[i].jid != 0){
-					puts("jid");
+					//puts("jid");
 			return 0;
 		}
 		if(jobs[i].state != 0){
-					puts("state");
+					//puts("state");
 			return 0;
 		}
 		if(jobs[i].cmdline[0] != '\0'){
-					puts("cmd");
+					//puts("cmd");
 			return 0;
 		}
 	}

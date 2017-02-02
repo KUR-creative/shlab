@@ -72,6 +72,14 @@ t: tsh.c
 	######## mine ########
 	make test06
 
+t7: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
+	# -------------------------------5--------------------------------
+	######## ref ########
+	make rtest07
+	######## mine ########
+	make test07
+
 at: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS)  -lcriterion
 	./tsh
