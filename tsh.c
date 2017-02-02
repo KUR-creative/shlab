@@ -406,9 +406,11 @@ void sigint_handler(int sig)
 	// get pid from job list
 	//Sigprocmask(SIG_BLOCK, &maskAll, &prevAll); // block all
 	pid = fgpid(jobs);
-	kill(pid, SIGINT);
-	sio_puts("	kill now fg job: ");
-	sio_putl(pid);
+	if(pid != 0){
+		Kill(pid, SIGINT);
+		sio_puts("	kill now fg job: ");
+		sio_putl(pid);
+	}
 	sio_puts("\n");
 	//Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 
@@ -759,16 +761,15 @@ cputs(YELLOW,"\n----------------------------------------------|");
 
 	// sigint test
 cputs(YELLOW,"\n----sigint kill only fg jobs, not bg jobs.----");
-	eval("./myspin 10 &\n");
+	eval("./myspin 4 &\n");
 	ASSERT_NOT( areJobsEmpty(jobs), "bg job didn't allocated in jobs!" );
-	eval("./myspin 10 &\n");
-	eval("./myspin 10 &\n");
+	eval("./myspin 4 &\n");
+	eval("./myspin 4 &\n");
 	pid_t thisPid = getpid();
 
 	puts("");
 	listjobs(jobs);
 
-	//eval("/bin/ps\n");
 	kill(0, 2); //sigint
 
 	puts("");
@@ -777,10 +778,11 @@ cputs(YELLOW,"\n----sigint kill only fg jobs, not bg jobs.----");
 
 cputs(YELLOW,"\n----------------------------------------------|");
 
+	kill(0, SIGINT); //sigint
 	// all terminated children has been reaped?
-	eval("/bin/ps\n");
+	//eval("/bin/ps\n");
 
-	while(1);
+	//while(1);
 	// end of test.
 	eval("quit\n"); 
 }
