@@ -80,6 +80,24 @@ t7: tsh.c
 	######## mine ########
 	make test07
 
+tsmoke: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
+	#smoke test
+	make rtest01
+	make test01
+	make rtest02
+	make test02
+	make rtest03
+	make test03
+	make rtest04
+	make test04
+	make rtest05
+	make test05
+	make rtest06
+	make test06
+	make rtest07
+	make test07 
+
 t: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------5--------------------------------

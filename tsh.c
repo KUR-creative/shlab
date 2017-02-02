@@ -77,8 +77,8 @@ int maxjid(struct job_t *jobs);
 int addjob(struct job_t *jobs, pid_t pid, int state, char *cmdline);
 int deletejob(struct job_t *jobs, pid_t pid); 
 pid_t fgpid(struct job_t *jobs);
-struct job_t *getjobpid(struct job_t *jobs, pid_t pid);
-struct job_t *getjobjid(struct job_t *jobs, int jid); 
+struct job_t* getjobpid(struct job_t *jobs, pid_t pid);
+struct job_t* getjobjid(struct job_t *jobs, int jid); 
 int pid2jid(pid_t pid); 
 void listjobs(struct job_t *jobs);
 
@@ -189,10 +189,11 @@ int main(int argc, char **argv)
 */
 void eval(char* cmdline) 
 {
-	char*		argv[MAXARGS];	
-	int			isBg, isBuiltin, state;
-	pid_t		pid;
-	sigset_t	maskAll, maskChild, prev;
+	char*			argv[MAXARGS];	
+	int				isBg, isBuiltin, state;
+	pid_t			pid;
+	sigset_t		maskAll, maskChild, prev;
+
 
 	// mask for all blocking
 	Sigfillset(&maskAll);
@@ -222,12 +223,12 @@ void eval(char* cmdline)
 
 		// wait fg job explicitly.
 		spid = 0;
-		if(! isBg){
-			while(! spid){ // or.. jobs?
-				Sigsuspend(&prev);
-			}
+		// if fg job exists in jobs && spid is not 0, then loop
+		while( fgpid(jobs) && !spid ){ // or.. jobs?
+			Sigsuspend(&prev);
 		}
-		else{ // print bg job allocation info 
+
+		if(isBg){ // print bg job allocation info 
 			struct job_t* tmpJob = getjobpid(jobs, pid);
 			printf("[%d] (%d) %s", 
 					tmpJob->jid, tmpJob->pid, tmpJob->cmdline);
@@ -364,16 +365,16 @@ void sigchld_handler(int sig)
 		pid_t tpid = jobs[i].pid; //temp pid
 		if(tpid != 0){
 			spid = waitpid(tpid, NULL, WNOHANG);
-			if(spid > 0){
-				sio_puts("\treaping child:");
-				sio_putl(spid);
-			}else{
-				sio_puts("\ttry to reap: ");
-				sio_putl(tpid);
-				sio_puts(" but can't: ");
-				sio_putl(spid);
-			}
-			sio_puts("\n");
+			//if(spid > 0){
+				//sio_puts("\treaping child:");
+				//sio_putl(spid);
+			//}else{
+				//sio_puts("\ttry to reap: ");
+				//sio_putl(tpid);
+				//sio_puts(" but can't: ");
+				//sio_putl(spid);
+			//}
+			//sio_puts("\n");
 			
 			//delete tpid job from job list!
 			Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
@@ -397,7 +398,6 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
-	//sio_puts(">>> sigint! <<<");
 	pid_t		pid;
 	//sigset_t	maskAll, prevAll;
 
@@ -428,6 +428,7 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
+	sio_puts(">>> sigtstp! <<<");
 	pid_t pid = fgpid(jobs);
 	if(pid != 0){
 		Kill(pid, SIGSTOP);
@@ -635,7 +636,6 @@ void sigquit_handler(int sig)
 // my own test function...
 void utest(void)
 {
-
 cputs(YELLOW,"\n----print bg info----");
 	eval("/bin/echo print bg info & \n");
 cputs(YELLOW,"\n----------------------------------------------|");
@@ -821,12 +821,12 @@ int isAllZero(struct job_t* arr, size_t size)
 // 0	job arr is not empty.
 int areJobsEmpty(struct job_t* arr)
 {
-	//for(int i = 0; i < MAXJOBS; i++){
-		//printf("%d: %d %d %d %s \n", 
-				//i,
-				//jobs[i].pid, jobs[i].jid, 
-				//jobs[i].state, jobs[i].cmdline);
-	//}
+	for(int i = 0; i < MAXJOBS; i++){
+		printf("%d: %d %d %d %s \n", 
+				i,
+				jobs[i].pid, jobs[i].jid, 
+				jobs[i].state, jobs[i].cmdline);
+	}
 	for(int i = 0; i < MAXJOBS; i++){
 		if(jobs[i].pid != 0){
 					//printf("?? %d ??", i);

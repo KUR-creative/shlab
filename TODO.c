@@ -97,6 +97,8 @@ test7
 test8
 	implement sigstop_handler
 	now fg --stop--> bg: then no more explicit waiting.
+		1- change status in jobs.
+		2- check bg in loop.
 
 test9
 test10
