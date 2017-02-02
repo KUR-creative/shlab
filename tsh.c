@@ -208,6 +208,7 @@ void eval(char* cmdline)
 		Sigprocmask(SIG_BLOCK, &maskChild, &prev); // block SIGCHLD
 		if((pid = Fork()) == 0){
 			// unblock SIGCHLD in child
+			Setpgid(0, 0);
 			Sigprocmask(SIG_SETMASK, &prev, NULL); 
 			Execve(argv[0], argv, environ);
 		}
@@ -372,6 +373,7 @@ void sigchld_handler(int sig)
 				sio_putl(spid);
 			}
 			sio_puts("\n");
+			
 			//delete tpid job from job list!
 			Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
 			deletejob(jobs, spid);

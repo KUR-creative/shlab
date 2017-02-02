@@ -78,6 +78,19 @@ test6
 		kill fg job only 
 			kill ONLY fg job. not bg jobs.
 			-> delete fg job from jobs.
+		kill fg only test: test08 passed. but it actually didn't work!
+			need manual test. 
+			(ex)
+			./tsh
+			./myspin 50 &
+			./myspin 50 &
+			./myspin 50
+			C^
+			./jobs
+				then all jobs are gone! wtf?
+		when no fg job run, then C^ must never work.
+
+		why test08 is a false test??? why?
 test7
 test8
 test9
