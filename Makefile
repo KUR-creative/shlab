@@ -98,13 +98,21 @@ tsmoke: tsh.c
 	make rtest07
 	make test07 
 
-t: tsh.c
+t8: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------5--------------------------------
 	######## ref ########
 	make rtest08
 	######## mine ########
 	make test08
+
+t: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
+	# -------------------------------5--------------------------------
+	######## ref ########
+	make rtest09
+	######## mine ########
+	make test09
 
 t16: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE

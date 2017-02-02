@@ -95,12 +95,15 @@ test7
 	//impl sigint_handler
 
 test8
-	implement sigstop_handler
-	now fg --stop--> bg: then no more explicit waiting.
-		1- change status in jobs.
-		2- check bg in loop.
+	//implement sigstop_handler
+	//now fg --stop--> st: then no more explicit waiting.
+		//1- change state in jobs.
+		//2- check fg is in job list? at fg waiting loop in eval
 
 test9
+	implement bg builtin-command
+		cmd bg interface
+		do_bgfg
 test10
 test11
 test12

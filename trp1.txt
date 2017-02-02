@@ -1,0 +1,5 @@
+#
+# tracePlus1.txt - just SIGINT but no fg job.
+#
+INT
+

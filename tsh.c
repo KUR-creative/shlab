@@ -428,10 +428,21 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
-	sio_puts(">>> sigtstp! <<<");
-	pid_t pid = fgpid(jobs);
+	//sio_puts(">>> sigtstp! <<<");
+	pid_t			pid		= fgpid(jobs);
+	struct job_t*	fgjob	= getjobpid(jobs, pid);
+	sigset_t		maskAll, prevMask;
+
+	Sigfillset(&maskAll);
 	if(pid != 0){
+		// FG -> ST
+		Sigprocmask(SIG_BLOCK, &maskAll, &prevMask);
+		fgjob->state = ST;
+		Sigprocmask(SIG_SETMASK, &prevMask, NULL);
+
+		// stop ONLY this fg job 
 		Kill(pid, SIGSTOP);
+
 		int jid = pid2jid(pid);
 		sio_puts("Job");
 		sio_puts(" [");	sio_putl(jid);	sio_puts("]");
