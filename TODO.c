@@ -111,33 +111,35 @@ test9
 		// 만일 프로세스가 죽었는데 jobs에서 찾는다면?
 		// 안 나오고 INVALID_PID가 뜨겠지.. 그럼 된 거 아냐?
 	implement bg builtin-command
-		cmd bg interface
-		1.
+		//cmd bg interface
+		//1.
 			//tsh> bg '\0'
-			bg command requires PID or %jobid argument
-		2.
+			//bg command requires PID or %jobid argument
+		//2.
 			//tsh> bg ^^tg         
-			bg: argument must be a PID or %jobid
+			//bg: argument must be a PID or %jobid
 			//tsh> bg -231
-			bg: argument must be a PID or %jobid
-		3.1.
+			//bg: argument must be a PID or %jobid
+		//3.1.
 			//tsh> bg %asd
-			%asd: No such job
+			//%asd: No such job
 			//tsh> bg %123
-			%123: No such job
-		3.2.
+			//%123: No such job
+		//3.2.
 			//tsh> bg 0
-			(0): No such process
+			//(0): No such process
 			//tsh> bg 123
-			(123): No such process
-		4.1
+			//(123): No such process
+		//4.1
 			//succes jobid
-		4.2
+		//4.2
 		    //succes pid
 
-		 go futehr: success bg case. ST -> BG
-			change target job in jobs
-			send signal to target job(real thing!) // need to t9 test.
+		 //go futehr: success bg case. ST -> BG
+			//change target job in jobs
+			//send signal to target job(real thing!) // need to t9 test.
+
+		minor fix: rewrite do_bgfg output (jid valid! -> ...)
 		do_bgfg
 			synchronization error?(in utest)
 				eval("/bin/echo 1:bg \n")

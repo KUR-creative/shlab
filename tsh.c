@@ -387,7 +387,6 @@ void do_bgfg(char **argv)
 res_t doBgFg(char* argv[])
 {
 	char*			arg1	= argv[1];
-	char*			jidstr	= arg1+1;
 	res_t			argType;	
 	sigset_t		maskAll, prevAll;
 	struct job_t*	job;
@@ -404,7 +403,8 @@ res_t doBgFg(char* argv[])
 
 	Sigfillset(&maskAll);
 	if(argType == JIDARG){
-		int jid = atoi(jidstr); //from str 2nd char to int
+		char*		jidstr	= arg1+1;
+		int			jid		= atoi(jidstr); //from str 2nd char to int
 
 		Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
 		job = getjobjid(jobs,jid);
@@ -413,7 +413,7 @@ res_t doBgFg(char* argv[])
 			// update jobs
 			job->state = BG;
 			// continue in background!
-			kill(job->pid, SIGCONT);
+			Kill(job->pid, SIGCONT);
 			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return VALID_JID;
 		}else{
@@ -423,7 +423,7 @@ res_t doBgFg(char* argv[])
 	}
 
 	if(argType == PIDARG){
-		int pid = atoi(arg1);
+		int			pid		= atoi(arg1);
 
 		Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
 		job = getjobpid(jobs,pid);
@@ -432,7 +432,7 @@ res_t doBgFg(char* argv[])
 			// update jobs
 			job->state = BG;
 			// continue in background!
-			kill(job->pid, SIGCONT);
+			Kill(job->pid, SIGCONT);
 			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return VALID_PID;
 		}else{
@@ -1195,7 +1195,7 @@ Test(doBgFg, ifArg1_validJIDthenJobStateChange_ST_to_BG){
 	addjob(jobs, 123, ST, "test\n");
 	char*	argv[2]	= {"bg", "%1"};
 	//when
-	res_t	result	= doBgFg(argv);
+	doBgFg(argv);
 	//then
 	job = getjobjid(jobs, 1);
 	dASSERT_EQ(job->state, BG);
@@ -1211,7 +1211,7 @@ Test(doBgFg, ifArg1_validPIDthenJobStateChange_ST_to_BG){
 	addjob(jobs, 123, ST, "test\n");
 	char*	argv[2]	= {"bg", "123"};
 	//when
-	res_t	result	= doBgFg(argv);
+	doBgFg(argv);
 	//then
 	job = getjobpid(jobs, 123);
 	dASSERT_EQ(job->state, BG);

@@ -111,7 +111,7 @@ t8: tsh.c
 	######## mine ########
 	make test08
 
-t: tsh.c
+t9: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------5--------------------------------
 	######## ref ########
@@ -119,7 +119,7 @@ t: tsh.c
 	######## mine ########
 	make test09
 
-t10: tsh.c
+t: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------5--------------------------------
 	######## ref ########

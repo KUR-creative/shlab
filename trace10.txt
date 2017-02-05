@@ -17,6 +17,8 @@ jobs
 /bin/echo tsh> fg %1
 fg %1
 
+/bin/echo if this msg print immediately, then test FAILED!
+
 /bin/echo tsh> jobs
 jobs
 
