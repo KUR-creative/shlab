@@ -337,6 +337,10 @@ int builtin_cmd(char **argv)
 		do_bgfg(argv);
 		return 1;
 	}
+	if( strcmp("fg", argv[0]) == 0 ){
+		do_bgfg(argv);
+		return 1;
+	}
 	if( strcmp("jobs", argv[0]) == 0 ){
 		listjobs(jobs);
 		return 1;
@@ -350,16 +354,17 @@ int builtin_cmd(char **argv)
 // need refactoring.. but NOT NOW!
 void do_bgfg(char **argv) 
 {
+	char*	act		= argv[0];
 	char*	arg1	= argv[1];
 	res_t	result	= doBgFg(argv);
 
 	switch(result){
 	case NULLARG:
-		printf("bg command requires PID or %%jobid argument\n");
+		printf("%s command requires PID or %%jobid argument\n", act);
 		break;
 
 	case UNDEFARG:
-		printf("bg command requires PID or %%jobid argument\n");
+		printf("%s command requires PID or %%jobid argument\n", act);
 		break;
 	
 	case INVALID_JID:
@@ -760,6 +765,18 @@ void sigquit_handler(int sig)
 // my own test function...
 void utest(void)
 {
+
+cputs(YELLOW,"\n----fg----");
+	eval("/bin/echo fg command requires PID or %jobid argument\n");
+	eval("bg\n");	
+puts("\n-------");
+	eval("/bin/echo fg: argument must be a PID or %jobid");
+	eval("bg ^^tg");
+puts("\n-------");
+	eval("/bin/echo fg: argument must be a PID or %jobid");
+	eval("bg -231");
+cputs(YELLOW,"\n----------------------------------------------|");
+/*
 cputs(YELLOW,"\n----sh----");
 puts("\n-------");
 	eval("/bin/echo bg command requires PID or %jobid argument\n");
@@ -786,7 +803,6 @@ cputs(YELLOW,"\n----------------------------------------------|");
 
 	//eval("/bin/echo 3:bg \n");
 
-/*
 cputs(YELLOW,"\n----isValidStr test----");
 	ASSERT( isValidStr("123","987654321"), "123 is not valid!" );
 	ASSERT_NOT( isValidStr("123","asdfcjskdjiw"), "123 is valid!" );
@@ -1191,9 +1207,9 @@ Test(doBgFg, ifArg1_validJIDthenJobStateChange_ST_to_BG){
 	deleteAllJobs(jobs);
 
 	//given
+	char*			argv[2]	= {"bg", "%1"};
 	struct job_t*	job;
 	addjob(jobs, 123, ST, "test\n");
-	char*	argv[2]	= {"bg", "%1"};
 	//when
 	doBgFg(argv);
 	//then
@@ -1207,9 +1223,9 @@ Test(doBgFg, ifArg1_validPIDthenJobStateChange_ST_to_BG){
 	deleteAllJobs(jobs);
 
 	//given
+	char*			argv[2]	= {"bg", "123"};
 	struct job_t*	job;
 	addjob(jobs, 123, ST, "test\n");
-	char*	argv[2]	= {"bg", "123"};
 	//when
 	doBgFg(argv);
 	//then
@@ -1218,6 +1234,7 @@ Test(doBgFg, ifArg1_validPIDthenJobStateChange_ST_to_BG){
 
 	deleteAllJobs(jobs);
 }
+
 /*
 // why signal handler cannot be called???
 // can't test signal with criterion!
