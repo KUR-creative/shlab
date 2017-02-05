@@ -1,11 +1,11 @@
 #
 # trace09.txt - Process bg builtin command
 #
-/bin/echo -e tsh> ./myspin 4 \046
-./myspin 4 &
+/bin/echo -e tsh> ./myspin 3 \046
+./myspin 3 &
 
-/bin/echo -e tsh> ./myspin 5
-./myspin 5 
+/bin/echo -e tsh> ./myspin 10
+./myspin 10 
 
 SLEEP 2
 TSTP
@@ -18,3 +18,5 @@ bg %2
 
 /bin/echo tsh> jobs
 jobs
+
+/bin/echo if this test quit immediately, then test FAILED!

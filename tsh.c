@@ -382,44 +382,15 @@ void do_bgfg(char **argv)
 		printf("unexpected ERROR occurred!\n");
 		exit(1);
 	}
-	/*
-	char*	arg1 = argv[1];
-	int		id, arg1type;
-	if(arg1 == NULL){
-		printf("bg command requires PID or %%jobid argument");
-		return;
-	}else{
-		arg1type = getArg1Type(arg1);
-		if(arg1type == JID){
-			if(arg1[1] != NULL){
-				id = atoi(arg1 + 1);// str -> int from 2nd character.
-				if(! do_bg(jobs, id, JID)){ //is failed?
-					printf("%s: No such job", arg1);
-				}
-				return;
-			}
-		}
-		else{	//do bg with pid
-			id = atoi(arg1); 	
-			if(id > 0){ // atoi didn't fail.
-				if(! do_bg(jobs, id, PID)){ //is failed?
-					printf("%s: No such process", arg1);
-				}
-				return;
-			}
-		}
-		printf("bg: argument must be a PID or %%jobid");
-	}
-
-    return;
-	*/
 }
 
-		//
 res_t doBgFg(char* argv[])
 {
-	char*	arg1	= argv[1];
-	res_t	argType;	
+	char*			arg1	= argv[1];
+	char*			jidstr	= arg1+1;
+	res_t			argType;	
+	sigset_t		maskAll, prevAll;
+	struct job_t*	job;
 
 	if(arg1 == NULL){
 		return NULLARG; 
@@ -431,23 +402,44 @@ res_t doBgFg(char* argv[])
 		return UNDEFARG;
 	}
 
+	Sigfillset(&maskAll);
 	if(argType == JIDARG){
-		char*	jidstr	= arg1+1;
-		int		jid		= atoi(jidstr); //from str 2nd char to int
-		if(getjobjid(jobs,jid) != NULL){
+		int jid = atoi(jidstr); //from str 2nd char to int
+
+		Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
+		job = getjobjid(jobs,jid);
+
+		if(job != NULL){
+			// update jobs
+			job->state = BG;
+			// continue in background!
+			kill(job->pid, SIGCONT);
+			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return VALID_JID;
 		}else{
+			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return INVALID_JID;
 		}
 	}
 
 	if(argType == PIDARG){
-		int		pid		= atoi(arg1);
-		if(getjobpid(jobs,pid) != NULL){
+		int pid = atoi(arg1);
+
+		Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
+		job = getjobpid(jobs,pid);
+
+		if(job != NULL){
+			// update jobs
+			job->state = BG;
+			// continue in background!
+			kill(job->pid, SIGCONT);
+			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return VALID_PID;
 		}else{
+			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return INVALID_PID;
 		}
+		Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 	}
 
 	return ERROR;
@@ -785,8 +777,8 @@ puts("\n-------");
 	eval("/bin/echo %888: No such job");
 	eval("bg %888");
 puts("\n-------");
-	eval("/bin/echo (0): No such process");
-	eval("bg 0");
+	eval("/bin/echo (10): No such process");
+	eval("bg 10");
 puts("\n-------");
 	eval("/bin/echo (123): No such process");
 	eval("bg 123");
@@ -1181,7 +1173,7 @@ Test(doBgFg, ifArg1_invalidPIDthenRet_INVALID_PID){
 	dASSERT_EQ(result, INVALID_PID);
 }
 
-Test(doBgFg, ifArg1_validJIDthenRet_VALID_PID){
+Test(doBgFg, ifArg1_validPIDthenRet_VALID_PID){
 	deleteAllJobs(jobs);
 
 	//given
@@ -1195,6 +1187,37 @@ Test(doBgFg, ifArg1_validJIDthenRet_VALID_PID){
 	deleteAllJobs(jobs);
 }
 
+Test(doBgFg, ifArg1_validJIDthenJobStateChange_ST_to_BG){
+	deleteAllJobs(jobs);
+
+	//given
+	struct job_t*	job;
+	addjob(jobs, 123, ST, "test\n");
+	char*	argv[2]	= {"bg", "%1"};
+	//when
+	res_t	result	= doBgFg(argv);
+	//then
+	job = getjobjid(jobs, 1);
+	dASSERT_EQ(job->state, BG);
+
+	deleteAllJobs(jobs);
+}
+
+Test(doBgFg, ifArg1_validPIDthenJobStateChange_ST_to_BG){
+	deleteAllJobs(jobs);
+
+	//given
+	struct job_t*	job;
+	addjob(jobs, 123, ST, "test\n");
+	char*	argv[2]	= {"bg", "123"};
+	//when
+	res_t	result	= doBgFg(argv);
+	//then
+	job = getjobpid(jobs, 123);
+	dASSERT_EQ(job->state, BG);
+
+	deleteAllJobs(jobs);
+}
 /*
 // why signal handler cannot be called???
 // can't test signal with criterion!

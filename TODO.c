@@ -105,6 +105,11 @@ test8
 		//2- check fg is in job list? at fg waiting loop in eval
 
 test9
+	
+		// doBgFg access critical section. 
+		// but... have to block signals??
+		// 만일 프로세스가 죽었는데 jobs에서 찾는다면?
+		// 안 나오고 INVALID_PID가 뜨겠지.. 그럼 된 거 아냐?
 	implement bg builtin-command
 		cmd bg interface
 		1.
@@ -131,8 +136,8 @@ test9
 		    //succes pid
 
 		 go futehr: success bg case. ST -> BG
-
-			is_jid or pid
+			change target job in jobs
+			send signal to target job(real thing!) // need to t9 test.
 		do_bgfg
 			synchronization error?(in utest)
 				eval("/bin/echo 1:bg \n")

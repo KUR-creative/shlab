@@ -28,11 +28,11 @@ tc: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -lcriterion
 	./tsh
 
-t: tsh.c
+tu: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	./tsh
 
-t12: tsh.c
+t1_2: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------1--------------------------------
 	######## ref ########
@@ -111,13 +111,21 @@ t8: tsh.c
 	######## mine ########
 	make test08
 
-t9: tsh.c
+t: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------5--------------------------------
 	######## ref ########
 	make rtest09
 	######## mine ########
 	make test09
+
+t10: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
+	# -------------------------------5--------------------------------
+	######## ref ########
+	make rtest10
+	######## mine ########
+	make test10
 
 t16: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
