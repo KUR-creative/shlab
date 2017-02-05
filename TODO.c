@@ -4,6 +4,10 @@ OBJECTIVE
 all test passed
 
 **
+vim session?
+how to press <F12> in starting vim?
+
+**
 //just input '\n' then segfault? wtf?
 undefined cmd -> don't fork anything but just filter it.
 	is it impossible???
@@ -103,7 +107,47 @@ test8
 test9
 	implement bg builtin-command
 		cmd bg interface
+		1.
+			//tsh> bg '\0'
+			bg command requires PID or %jobid argument
+		2.
+			//tsh> bg ^^tg         
+			bg: argument must be a PID or %jobid
+			//tsh> bg -231
+			bg: argument must be a PID or %jobid
+		3.1.
+			//tsh> bg %asd
+			%asd: No such job
+			//tsh> bg %123
+			%123: No such job
+		3.2.
+			//tsh> bg 0
+			(0): No such process
+			//tsh> bg 123
+			(123): No such process
+		4.1
+			//succes jobid
+		4.2
+		    //succes pid
+
+		 go futehr: success bg case. ST -> BG
+
+			is_jid or pid
 		do_bgfg
+			synchronization error?(in utest)
+				eval("/bin/echo 1:bg \n")
+				eval("bg \n") 
+				eval("/bin/echo 2:bg xt\n")
+				eval("/bin/echo 3:bg \n")
+			result:
+				1:bg
+				2:bg xt
+				3:bg
+				bg command requires PID or %jobid argument
+				 
+
+**	fix Makefile ----%d---- reflect true test number
+
 test10
 test11
 test12

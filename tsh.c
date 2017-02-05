@@ -89,12 +89,31 @@ typedef void handler_t(int);
 //handler_t *Signal(int signum, handler_t *handler);
 
 //mine
-volatile sig_atomic_t spid = 0; // shared pid (shared by main and handler)
+typedef enum res_t {
+	NULLARG,
+	UNDEFARG,
+	INVALID_JID,
+	VALID_JID,
+	INVALID_PID,
+	VALID_PID,
+	JIDARG,
+	PIDARG,
+	ERROR = -1,
+}res_t;
+volatile sig_atomic_t spid = 0; //shared pid (shared by main and handler)
 // is gpid really needed?
 void utest(void);
 void deleteAllJobs(struct job_t jobs[]);
 int isAllZero(struct job_t* ptr, size_t size);
 int areJobsEmpty(struct job_t* jobs);
+int isValidStr(char* str, const char* validChars);
+int do_bg(struct job_t* jobs, int id, int whatid);
+res_t getArg1Type(char* arg1);
+res_t doBgFg(char* argv[]);
+#define PID	0
+#define JID	1
+
+
 #define RED		"\x1b[31m"
 #define YELLOW	"\x1b[33m"
 #define ENDCOL	"\x1b[0m"
@@ -314,22 +333,124 @@ int builtin_cmd(char **argv)
 	if(argv[0] == NULL){ // input "\n" 
 		return 1;
 	}
-	if( strcmp("quit", argv[0]) == 0 ){
-		exit(0);
+	if( strcmp("bg", argv[0]) == 0 ){
+		do_bgfg(argv);
+		return 1;
 	}
 	if( strcmp("jobs", argv[0]) == 0 ){
 		listjobs(jobs);
 		return 1;
 	}
+	if( strcmp("quit", argv[0]) == 0 ){
+		exit(0);
+	}
     return 0;     /* not a builtin command */
 }
 
-/* 
- * do_bgfg - Execute the builtin bg and fg commands
- */
+// need refactoring.. but NOT NOW!
 void do_bgfg(char **argv) 
 {
+	char*	arg1	= argv[1];
+	res_t	result	= doBgFg(argv);
+
+	switch(result){
+	case NULLARG:
+		printf("bg command requires PID or %%jobid argument\n");
+		break;
+
+	case UNDEFARG:
+		printf("bg command requires PID or %%jobid argument\n");
+		break;
+	
+	case INVALID_JID:
+		printf("%s: No such job\n", arg1);
+		break;
+
+	case VALID_JID:
+		puts("jid valid!");
+		break;
+
+	case INVALID_PID:
+		printf("(%s): No such process\n", arg1);
+		break;
+
+	case VALID_PID:
+		puts("pid valid!");
+		break;
+
+	default:
+		printf("unexpected ERROR occurred!\n");
+		exit(1);
+	}
+	/*
+	char*	arg1 = argv[1];
+	int		id, arg1type;
+	if(arg1 == NULL){
+		printf("bg command requires PID or %%jobid argument");
+		return;
+	}else{
+		arg1type = getArg1Type(arg1);
+		if(arg1type == JID){
+			if(arg1[1] != NULL){
+				id = atoi(arg1 + 1);// str -> int from 2nd character.
+				if(! do_bg(jobs, id, JID)){ //is failed?
+					printf("%s: No such job", arg1);
+				}
+				return;
+			}
+		}
+		else{	//do bg with pid
+			id = atoi(arg1); 	
+			if(id > 0){ // atoi didn't fail.
+				if(! do_bg(jobs, id, PID)){ //is failed?
+					printf("%s: No such process", arg1);
+				}
+				return;
+			}
+		}
+		printf("bg: argument must be a PID or %%jobid");
+	}
+
     return;
+	*/
+}
+
+		//
+res_t doBgFg(char* argv[])
+{
+	char*	arg1	= argv[1];
+	res_t	argType;	
+
+	if(arg1 == NULL){
+		return NULLARG; 
+	}
+
+	argType = getArg1Type(arg1);
+
+	if(argType == UNDEFARG){
+		return UNDEFARG;
+	}
+
+	if(argType == JIDARG){
+		char*	jidstr	= arg1+1;
+		int		jid		= atoi(jidstr); //from str 2nd char to int
+		if(getjobjid(jobs,jid) != NULL){
+			return VALID_JID;
+		}else{
+			return INVALID_JID;
+		}
+	}
+
+	if(argType == PIDARG){
+		int		pid		= atoi(arg1);
+		if(getjobpid(jobs,pid) != NULL){
+			return VALID_PID;
+		}else{
+			return INVALID_PID;
+		}
+	}
+
+	return ERROR;
 }
 
 /* 
@@ -563,10 +684,10 @@ struct job_t *getjobjid(struct job_t *jobs, int jid)
     int i;
 
     if (jid < 1)
-	return NULL;
+		return NULL;
     for (i = 0; i < MAXJOBS; i++)
-	if (jobs[i].jid == jid)
-	    return &jobs[i];
+		if (jobs[i].jid == jid)
+			return &jobs[i];
     return NULL;
 }
 
@@ -647,11 +768,42 @@ void sigquit_handler(int sig)
 // my own test function...
 void utest(void)
 {
+cputs(YELLOW,"\n----sh----");
+puts("\n-------");
+	eval("/bin/echo bg command requires PID or %jobid argument\n");
+	eval("bg\n");	
+puts("\n-------");
+	eval("/bin/echo bg: argument must be a PID or %jobid");
+	eval("bg ^^tg");
+puts("\n-------");
+	eval("/bin/echo bg: argument must be a PID or %jobid");
+	eval("bg -231");
+puts("\n-------");
+	eval("/bin/echo %asd: No such job");
+	eval("bg %asd");
+puts("\n-------");
+	eval("/bin/echo %888: No such job");
+	eval("bg %888");
+puts("\n-------");
+	eval("/bin/echo (0): No such process");
+	eval("bg 0");
+puts("\n-------");
+	eval("/bin/echo (123): No such process");
+	eval("bg 123");
+cputs(YELLOW,"\n----------------------------------------------|");
+
+	//eval("/bin/echo 3:bg \n");
+
+/*
+cputs(YELLOW,"\n----isValidStr test----");
+	ASSERT( isValidStr("123","987654321"), "123 is not valid!" );
+	ASSERT_NOT( isValidStr("123","asdfcjskdjiw"), "123 is valid!" );
+cputs(YELLOW,"\n----------------------------------------------|");
+
 cputs(YELLOW,"\n----print bg info----");
 	eval("/bin/echo print bg info & \n");
 cputs(YELLOW,"\n----------------------------------------------|");
 
-/*
 cputs(YELLOW,"\n----eval('&') is exceptional----");
 	eval("&\n");
 cputs(YELLOW,"\n----------------------------------------------|");
@@ -832,12 +984,12 @@ int isAllZero(struct job_t* arr, size_t size)
 // 0	job arr is not empty.
 int areJobsEmpty(struct job_t* arr)
 {
-	for(int i = 0; i < MAXJOBS; i++){
-		printf("%d: %d %d %d %s \n", 
-				i,
-				jobs[i].pid, jobs[i].jid, 
-				jobs[i].state, jobs[i].cmdline);
-	}
+	//for(int i = 0; i < MAXJOBS; i++){
+		//printf("%d: %d %d %d %s \n", 
+				//i,
+				//jobs[i].pid, jobs[i].jid, 
+				//jobs[i].state, jobs[i].cmdline);
+	//}
 	for(int i = 0; i < MAXJOBS; i++){
 		if(jobs[i].pid != 0){
 					//printf("?? %d ??", i);
@@ -858,6 +1010,79 @@ int areJobsEmpty(struct job_t* arr)
 		}
 	}
 	return 1;
+}
+
+// ret
+// 1	string is valid.
+// 0	string is not valid.
+int isValidStr(char* str, const char* validChars)
+{
+    char ch;
+    int validCount = strlen(validChars);
+    for (int i = 0; str[i]; i++) {
+        int count;
+        ch = str[i];
+        for (count = 0; validChars[count]; count++) {
+            if (ch == validChars[count]) {
+                break;
+            }
+        }
+ 
+        if (count >= validCount) { // 문자가 validChars에 포함되지 않음.
+            return 0;
+        }
+    }
+    // no error
+    return 1;
+}
+
+//whatid
+// 0	id is pid
+// !0	id is jid
+//
+//ret
+// 1	success
+// 0	fail
+int do_bg(struct job_t* jobs, int id, int whatid)
+{
+	struct job_t*	job;
+
+	if(whatid == 0)	// pid
+	{
+		//critical section access. need blocking?
+		job = getjobpid(jobs, id);
+		if(job != NULL){
+			//do real bg thing!
+		}else{
+			return 0;
+		}
+	}
+	else			// jid
+	{
+		//critical section access. need blocking?
+		job = getjobjid(jobs, id); 
+		if(job != NULL){
+			//do real bg thing!
+		}else{
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+// in do_bgfg, arg1 string is "%jid" or "pid"?
+res_t getArg1Type(char* arg1)
+{
+	if(arg1[0] == '%'){	
+		return JIDARG;
+	}
+	else if(atoi(arg1) > 0){	
+		return PIDARG;
+	}
+	else{
+		return UNDEFARG;
+	}
 }
 /*--------------------------*/
 #ifndef RELEASE
@@ -888,16 +1113,86 @@ int areJobsEmpty(struct job_t* arr)
 	cr_assert_eq((actual),(expected),\
 	#actual":%p != %p:"#expected"\n",(void**)(actual),(void**)(expected))
 
-
-Test(builtin_cmd, ifCmdIsntBuiltInThenReturn0){
-	cr_skip_test("nope");
+Test(doBgFg, arg1_isNULLthenRet_NULLARG){
 	//given
-	char*	cmdline			= "nope";
-	char*	argv[MAXARGS];	
+	char*	argv[2]	= {"bg", NULL};	
 	//when
-	parseline(cmdline, argv);
+	res_t	result	= doBgFg(argv);
 	//then
-	dASSERT_EQ( builtin_cmd(argv), 0 );
+	dASSERT_EQ(result, NULLARG);
+}
+
+Test(doBgFg, arg1_cantParseAnyIDthenRet_UNDEFARG){
+	//given
+	char*	argv[2]	= {"bg", "^^tg"};	
+	//when
+	res_t	result	= doBgFg(argv);
+	//then
+	dASSERT_EQ(result, UNDEFARG);
+}
+
+Test(doBgFg, ifArg1_negativeNumberThenRet_UNDEFARG){
+	//given
+	char*	argv[2]	= {"bg", "-231"};	
+	//when
+	res_t	result	= doBgFg(argv);
+	//then
+	dASSERT_EQ(result, UNDEFARG);
+}
+
+Test(doBgFg, ifArg1_percentXXXthenRet_JIDARG){
+	//given
+	char*	argv[2]	= {"bg", "%%asd"};
+	//when
+	res_t	result	= doBgFg(argv);
+	//then
+	dASSERT_EQ(result, INVALID_JID);
+}
+
+Test(doBgFg, ifArg1_invalidJIDthenRet_JIDARG){
+	//given
+	char*	argv[2]	= {"bg", "%23"};
+	//when
+	res_t	result	= doBgFg(argv);
+	//then
+	dASSERT_EQ(result, INVALID_JID);
+}
+
+Test(doBgFg, ifArg1_validJIDthenRet_VALID_JID){
+	deleteAllJobs(jobs);
+
+	//given
+	addjob(jobs, 123, BG, "test\n");
+	char*	argv[2]	= {"bg", "%1"};
+	//when
+	res_t	result	= doBgFg(argv);
+	//then
+	dASSERT_EQ(result, VALID_JID);
+
+	deleteAllJobs(jobs);
+}
+
+Test(doBgFg, ifArg1_invalidPIDthenRet_INVALID_PID){
+	//given
+	char*	argv[2]	= {"bg", "1"};
+	//when
+	res_t	result	= doBgFg(argv);
+	//then
+	dASSERT_EQ(result, INVALID_PID);
+}
+
+Test(doBgFg, ifArg1_validJIDthenRet_VALID_PID){
+	deleteAllJobs(jobs);
+
+	//given
+	addjob(jobs, 123, BG, "test\n");
+	char*	argv[2]	= {"bg", "123"};
+	//when
+	res_t	result	= doBgFg(argv);
+	//then
+	dASSERT_EQ(result, VALID_PID);
+
+	deleteAllJobs(jobs);
 }
 
 /*

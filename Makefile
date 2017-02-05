@@ -13,7 +13,8 @@ FILES = $(TSH) ./myspin ./mysplit ./mystop ./myint
 
 LIBS = -lpthread  -lrt
 INCS = -I./
-CFLAGS = -g -Wall -std=gnu99 -O2  #-Werror
+CFLAGS = -g -Wall -std=gnu99 -O0  #-Werror
+#CFLAGS = -g -Wall -std=gnu99 -O2  #-Werror
 
 all: $(FILES)
 
@@ -23,7 +24,11 @@ all: $(FILES)
 handin:
 	cp tsh.c $(HANDINDIR)/$(TEAM)-$(VERSION)-tsh.c
 
-tu: tsh.c
+tc: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -lcriterion
+	./tsh
+
+t: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	./tsh
 
@@ -106,7 +111,7 @@ t8: tsh.c
 	######## mine ########
 	make test08
 
-t: tsh.c
+t9: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------5--------------------------------
 	######## ref ########
@@ -129,10 +134,6 @@ tp1: tsh.c
 	$(DRIVER) -t trp1.txt -s $(TSHREF) -a $(TSHARGS) 
 	######## mine ########
 	$(DRIVER) -t trp1.txt -s $(TSH) -a $(TSHARGS) 
-
-at: tsh.c
-	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS)  -lcriterion
-	./tsh
 
 tsh-release: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c -DRELEASE
