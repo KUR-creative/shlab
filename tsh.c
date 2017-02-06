@@ -231,7 +231,11 @@ void eval(char* cmdline)
 			Setpgid(0, 0);
 			// unblock SIGCHLD in child
 			Sigprocmask(SIG_SETMASK, &prev, NULL); 
-			Execve(argv[0], argv, environ);
+			if(execve(argv[0], argv, environ) < 0){
+				fprintf(stderr, "%s: Command not found\n", argv[0]);
+				exit(0);
+			}
+						
 		}
 		//job allocation!
 		Sigprocmask(SIG_BLOCK, &maskAll, NULL); // block all
