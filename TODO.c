@@ -139,7 +139,13 @@ test9
 			//change target job in jobs
 			//send signal to target job(real thing!) // need to t9 test.
 
+		//fg interface
+		fg real thing
+			BG -> FG  : fg command
+			ST -> FG  : fg command
+
 		minor fix: rewrite do_bgfg output (jid valid! -> ...)
+
 		do_bgfg
 			synchronization error?(in utest)
 				eval("/bin/echo 1:bg \n")

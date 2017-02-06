@@ -208,10 +208,10 @@ int main(int argc, char **argv)
 */
 void eval(char* cmdline) 
 {
-	char*			argv[MAXARGS];	
-	int				isBg, isBuiltin, state;
-	pid_t			pid;
-	sigset_t		maskAll, maskChild, prev;
+	char*		argv[MAXARGS];	
+	int			isBg, isBuiltin, state;
+	pid_t		pid;
+	sigset_t	maskAll, maskChild, prev;
 
 
 	// mask for all blocking
@@ -233,18 +233,10 @@ void eval(char* cmdline)
 			Sigprocmask(SIG_SETMASK, &prev, NULL); 
 			Execve(argv[0], argv, environ);
 		}
-
 		//job allocation!
 		Sigprocmask(SIG_BLOCK, &maskAll, NULL); // block all
 		if( addjob(jobs, pid, state, cmdline) == 0 ){ 
 			cputs(RED, "addjob error!");
-		}
-
-		// wait fg job explicitly.
-		spid = 0;
-		// if fg job exists in jobs && spid is not 0, then loop
-		while( fgpid(jobs) && !spid ){ // or.. jobs?
-			Sigsuspend(&prev);
 		}
 
 		if(isBg){ // print bg job allocation info 
@@ -252,10 +244,20 @@ void eval(char* cmdline)
 			printf("[%d] (%d) %s", 
 					tmpJob->jid, tmpJob->pid, tmpJob->cmdline);
 		}
-
-		// unblock signals to reap bg
-		Sigprocmask(SIG_SETMASK, &prev, NULL);
 	}
+
+	// if FG job is in jobs,
+	if(fgpid(jobs)){
+		// wait fg job explicitly.
+		spid = 0;
+		// if fg job exists in jobs && spid is not 0, then loop
+		while( fgpid(jobs) && !spid ){ // or.. jobs?
+			Sigsuspend(&prev);
+		}
+	}
+
+	// unblock signals to reap bg
+	Sigprocmask(SIG_SETMASK, &prev, NULL);
     return;
 }
 
@@ -333,11 +335,11 @@ int builtin_cmd(char **argv)
 	if(argv[0] == NULL){ // input "\n" 
 		return 1;
 	}
-	if( strcmp("bg", argv[0]) == 0 ){
+	if( strcmp("fg", argv[0]) == 0 ){
 		do_bgfg(argv);
 		return 1;
 	}
-	if( strcmp("fg", argv[0]) == 0 ){
+	if( strcmp("bg", argv[0]) == 0 ){
 		do_bgfg(argv);
 		return 1;
 	}
@@ -391,10 +393,13 @@ void do_bgfg(char **argv)
 
 res_t doBgFg(char* argv[])
 {
+	char*			actStr	= argv[0];
 	char*			arg1	= argv[1];
 	res_t			argType;	
 	sigset_t		maskAll, prevAll;
+	int				act;
 	struct job_t*	job;
+
 
 	if(arg1 == NULL){
 		return NULLARG; 
@@ -406,6 +411,9 @@ res_t doBgFg(char* argv[])
 		return UNDEFARG;
 	}
 
+	// act what?
+	act = (strcmp(actStr,"fg") == 0) ? FG:BG;
+
 	Sigfillset(&maskAll);
 	if(argType == JIDARG){
 		char*		jidstr	= arg1+1;
@@ -415,13 +423,21 @@ res_t doBgFg(char* argv[])
 		job = getjobjid(jobs,jid);
 
 		if(job != NULL){
-			// update jobs
-			job->state = BG;
-			// continue in background!
-			Kill(job->pid, SIGCONT);
+			if(act == FG){
+				// update jobs
+				job->state = FG;
+				// continue in foreground!
+				Kill(job->pid, SIGCONT);
+			}else{
+				// update jobs
+				job->state = BG;
+				// continue in background!
+				Kill(job->pid, SIGCONT);
+			}
 			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return VALID_JID;
-		}else{
+		}
+		else{
 			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return INVALID_JID;
 		}
@@ -434,13 +450,21 @@ res_t doBgFg(char* argv[])
 		job = getjobpid(jobs,pid);
 
 		if(job != NULL){
-			// update jobs
-			job->state = BG;
-			// continue in background!
-			Kill(job->pid, SIGCONT);
+			if(act == FG){
+				// update jobs
+				job->state = FG;
+				// continue in foreground!
+				Kill(job->pid, SIGCONT);
+			}else{
+				// update jobs
+				job->state = BG;
+				// continue in background!
+				Kill(job->pid, SIGCONT);
+			}
 			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return VALID_PID;
-		}else{
+		}
+		else{
 			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return INVALID_PID;
 		}
