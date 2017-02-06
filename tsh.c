@@ -83,10 +83,7 @@ int pid2jid(pid_t pid);
 void listjobs(struct job_t *jobs);
 
 void usage(void);
-//void unix_error(char *msg);
-//void app_error(char *msg);
 typedef void handler_t(int);
-//handler_t *Signal(int signum, handler_t *handler);
 
 //mine
 typedef enum res_t {
@@ -101,13 +98,10 @@ typedef enum res_t {
 	ERROR = -1,
 }res_t;
 volatile sig_atomic_t spid = 0; //shared pid (shared by main and handler)
-// is gpid really needed?
 void utest(void);
 void deleteAllJobs(struct job_t jobs[]);
 int isAllZero(struct job_t* ptr, size_t size);
 int areJobsEmpty(struct job_t* jobs);
-int isValidStr(char* str, const char* validChars);
-int do_bg(struct job_t* jobs, int id, int whatid);
 res_t getArg1Type(char* arg1);
 res_t doBgFg(char* argv[]);
 #define PID	0
@@ -252,12 +246,10 @@ void eval(char* cmdline)
 
 	// if FG job is in jobs,
 	if(fgpid(jobs)){
-					//puts("wait where?");
 		// wait fg job explicitly.
 		spid = 0;
 		// if fg job exists in jobs && spid is not 0, then loop
 		while( fgpid(jobs) && !spid ){ // or.. jobs?
-						//Sio_puts("?");
 			Sigsuspend(&prev);
 		}
 	}
@@ -359,7 +351,6 @@ int builtin_cmd(char **argv)
     return 0;     /* not a builtin command */
 }
 
-// need refactoring.. but NOT NOW!
 void do_bgfg(char **argv) 
 {
 	char*	act		= argv[0];
@@ -495,42 +486,16 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
-	//sio_puts(">>>> SIG CHLD HANDLER <<<<\n");
 	int			oldErrno = errno;
 
-	sigset_t	maskAll, prevAll;
 	int			status;
+	sigset_t	maskAll, prevAll;
 
 	Sigfillset(&maskAll);
-	//sio_puts(" -------- \n");
 	for(int i = 0; i < MAXJOBS; i++){
 		pid_t tpid = jobs[i].pid; //temp pid
 		if(tpid != 0){
 			spid = waitpid(tpid, &status, WNOHANG | WUNTRACED);
-			//if(spid > 0){
-				//sio_puts("\treaping child:");
-				//sio_putl(spid);
-			//}else{
-				//sio_puts("\ttry to reap: ");
-				//sio_putl(tpid);
-				//sio_puts(" but can't: ");
-				//sio_putl(spid);
-			//}
-			//sio_puts("\n");
-			
-			/*
-			sio_puts(">> ");
-			sio_putl(WIFEXITED(status));
-			sio_puts(" = 1 norm dead\t");
-
-			sio_puts(">> ");
-			sio_putl(WIFSIGNALED(status));
-			sio_puts(" = 1 sig dead\t");
-
-			sio_puts(">> ");
-			sio_putl(WIFSTOPPED(status));
-			sio_puts(" = 1 sig stopped\n");
-			*/
 
 			if( WIFEXITED(status) || WIFSIGNALED(status) ){
 				//delete tpid job from job list!
@@ -550,10 +515,6 @@ void sigchld_handler(int sig)
 		}
 	}
 
-	//if(errno != ECHILD){
-		//Sio_error("sigchld_handler>waitpid error");
-	//}
-
 	errno = oldErrno;
 }
 
@@ -565,14 +526,8 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
-	pid_t		pid;
-	//sigset_t	maskAll, prevAll;
+	pid_t	pid;
 
-	// mask for all blocking
-	//Sigfillset(&maskAll);
-
-	// get pid from job list
-	//Sigprocmask(SIG_BLOCK, &maskAll, &prevAll); // block all
 	pid = fgpid(jobs);
 	if(pid != 0){
 		Kill(-pid, SIGINT);
@@ -582,9 +537,7 @@ void sigint_handler(int sig)
 		sio_puts(" (");	sio_putl(pid);	sio_puts(")");
 		sio_puts(" terminated by signal 2 \n");
 	}
-	//Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 
-	//exit(0);
     return;
 }
 
@@ -595,7 +548,6 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
-	//sio_puts(">>> sigtstp! <<<");
 	pid_t			pid		= fgpid(jobs);
 	struct job_t*	fgjob	= getjobpid(jobs, pid);
 	sigset_t		maskAll, prevMask;
@@ -814,6 +766,7 @@ void sigquit_handler(int sig)
 void utest(void)
 {
 
+/*
 cputs(YELLOW,"\n----fg----");
 	eval("/bin/echo fg command requires PID or %jobid argument\n");
 	eval("bg\n");	
@@ -824,7 +777,6 @@ puts("\n-------");
 	eval("/bin/echo fg: argument must be a PID or %jobid");
 	eval("bg -231");
 cputs(YELLOW,"\n----------------------------------------------|");
-/*
 cputs(YELLOW,"\n----sh----");
 puts("\n-------");
 	eval("/bin/echo bg command requires PID or %jobid argument\n");
@@ -851,10 +803,6 @@ cputs(YELLOW,"\n----------------------------------------------|");
 
 	//eval("/bin/echo 3:bg \n");
 
-cputs(YELLOW,"\n----isValidStr test----");
-	ASSERT( isValidStr("123","987654321"), "123 is not valid!" );
-	ASSERT_NOT( isValidStr("123","asdfcjskdjiw"), "123 is valid!" );
-cputs(YELLOW,"\n----------------------------------------------|");
 
 cputs(YELLOW,"\n----print bg info----");
 	eval("/bin/echo print bg info & \n");
@@ -899,7 +847,6 @@ cputs(YELLOW,"\n--------shMustReapBgChild--------");
 	ASSERT( areJobsEmpty(jobs), "jobs are not cleared!" );
 cputs(YELLOW,"\n----------------------------------------------|");
 
-*/
 cputs(YELLOW,"\n--------shMustReapMultipleBgChildren--------");
 	eval("./myspin 1 & \n");
 	eval("./myspin 1 & \n");
@@ -909,7 +856,6 @@ cputs(YELLOW,"\n--------shMustReapMultipleBgChildren--------");
 	//ASSERT( areJobsEmpty(jobs), "jobs are not cleared!" );
 	//but... so... is this test wrong? maybe?
 cputs(YELLOW,"\n----------------------------------------------|");
-/*
 cputs(YELLOW,"\n-----add job into jobs(reference)-----");
 	pid_t tpid = 11;
 	addjob(jobs, tpid, UNDEF, "test");
@@ -948,7 +894,6 @@ cputs(YELLOW,"\n--------not all zero, isAllZero ret = 0--------");
 	ASSERT_EQ( isAllZero(arr3, 10), 0, "incorrect: arr3 is not all zero." );
 cputs(YELLOW,"\n----------------------------------------------|");
 
-*/
 //are job add operations correct?
 cputs(YELLOW,"\n------exec lasting bg job will be added jobs------");
 	eval("./myspin 1 &\n");
@@ -1017,6 +962,7 @@ cputs(YELLOW,"\n----------------------------------------------|");
 	//while(1);
 	// end of test.
 	eval("quit\n"); 
+*/
 }
 
 // mine
@@ -1048,82 +994,18 @@ int areJobsEmpty(struct job_t* arr)
 	//}
 	for(int i = 0; i < MAXJOBS; i++){
 		if(jobs[i].pid != 0){
-					//printf("?? %d ??", i);
-					//printf("pid: %d ??", jobs[i].pid);
 			return 0;
 		}
 		if(jobs[i].jid != 0){
-					//puts("jid");
 			return 0;
 		}
 		if(jobs[i].state != 0){
-					//puts("state");
 			return 0;
 		}
 		if(jobs[i].cmdline[0] != '\0'){
-					//puts("cmd");
 			return 0;
 		}
 	}
-	return 1;
-}
-
-// ret
-// 1	string is valid.
-// 0	string is not valid.
-int isValidStr(char* str, const char* validChars)
-{
-    char ch;
-    int validCount = strlen(validChars);
-    for (int i = 0; str[i]; i++) {
-        int count;
-        ch = str[i];
-        for (count = 0; validChars[count]; count++) {
-            if (ch == validChars[count]) {
-                break;
-            }
-        }
- 
-        if (count >= validCount) { // 문자가 validChars에 포함되지 않음.
-            return 0;
-        }
-    }
-    // no error
-    return 1;
-}
-
-//whatid
-// 0	id is pid
-// !0	id is jid
-//
-//ret
-// 1	success
-// 0	fail
-int do_bg(struct job_t* jobs, int id, int whatid)
-{
-	struct job_t*	job;
-
-	if(whatid == 0)	// pid
-	{
-		//critical section access. need blocking?
-		job = getjobpid(jobs, id);
-		if(job != NULL){
-			//do real bg thing!
-		}else{
-			return 0;
-		}
-	}
-	else			// jid
-	{
-		//critical section access. need blocking?
-		job = getjobjid(jobs, id); 
-		if(job != NULL){
-			//do real bg thing!
-		}else{
-			return 0;
-		}
-	}
-
 	return 1;
 }
 
@@ -1140,6 +1022,7 @@ res_t getArg1Type(char* arg1)
 		return UNDEFARG;
 	}
 }
+
 /*--------------------------*/
 #ifndef RELEASE
 
@@ -1291,47 +1174,6 @@ Test(doBgFg, ifArg1isNotPidNorJidThenRet_UNDEFARG){
 	//then
 	dASSERT_EQ(result, UNDEFARG);
 }
-/*
-// why signal handler cannot be called???
-// can't test signal with criterion!
-Test(eval, shMustReapBgChild){
-	sigset_t	maskAll, maskOne, prevOne;
-	// mask for all blocking
-	Sigfillset(&maskAll);
-	// mask for SIGCHLD blocking
-	Sigemptyset(&maskOne);
-	Sigaddset(&maskOne, SIGCHLD);
-	Sigprocmask(SIG_SETMASK, &prevOne, NULL); 
 
-	// waitpid를 WNOHANG와 함께 쓰면
-	// wait할 child가 없으면 ret: 0
-	// wait할 child가 있으면 ret: 그 child의 pid
-	int status, result;
-	eval("./myspin 1 & ");
-			system("ps -ef|grep defunct");
-	result = waitpid(dbgpid, &status, WNOHANG);
-				printf(">>WNOHANG? %d \n", result);
-			sleep(2);
-			system("ps -ef|grep defunct");
-	result = waitpid(dbgpid, &status, WNOHANG);
-				printf(">>WNOHANG? %d \n", result);
-	printf("dbgpid = %d\n", dbgpid);
-	dASSERT_NEQ(result, dbgpid);
-}
-
-Test(eval, shMustReapFgChild){
-	int status, result;
-	eval("./myspin 1 ");
-			system("ps -ef|grep defunct");
-	result = waitpid(dbgpid, &status, WNOHANG);
-				printf(">>WNOHANG? %d \n", result);
-			sleep(2);
-			system("ps -ef|grep defunct");
-	result = waitpid(dbgpid, &status, WNOHANG);
-				printf(">>WNOHANG? %d \n", result);
-	printf("dbgpid = %d\n", dbgpid);
-	dASSERT_NEQ(result, dbgpid);
-}
-*/
 #endif
 /*--------------------------*/

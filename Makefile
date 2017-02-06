@@ -24,6 +24,10 @@ all: $(FILES)
 handin:
 	cp tsh.c $(HANDINDIR)/$(TEAM)-$(VERSION)-tsh.c
 
+install: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
+	./tsh
+
 tc: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -lcriterion
 	./tsh
@@ -85,24 +89,6 @@ t7: tsh.c
 	######## mine ########
 	make test07
 
-tsmoke: tsh.c
-	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
-	#smoke test
-	make rtest01
-	make test01
-	make rtest02
-	make test02
-	make rtest03
-	make test03
-	make rtest04
-	make test04
-	make rtest05
-	make test05
-	make rtest06
-	make test06
-	make rtest07
-	make test07 
-
 t8: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------8--------------------------------
@@ -151,7 +137,7 @@ t13: tsh.c
 	######## mine ########
 	make test13
 
-t: tsh.c
+t14: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------14--------------------------------
 	######## ref ########
