@@ -6,7 +6,7 @@ http://csapp.cs.cmu.edu/3e/shlab.pdf
 
 initial commit date:  2017/1/13  
 final cammit date:    2017/2/6  
-                      25 days
+                      25 days  
 effective day:        11~12 days  
 
 최초 커밋 2017/1/13  
