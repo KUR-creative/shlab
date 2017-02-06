@@ -13,5 +13,6 @@ jobs
 /bin/echo tsh> /bin/ps a
 /bin/ps a
 
+/bin/echo if two ./mysplit status is all T, then test PASSED!
 
 

@@ -10,3 +10,6 @@ INT
 /bin/echo tsh> /bin/ps a
 /bin/ps a
 
+/bin/echo if "./mysplit 4" were printed, then test FAILED!
+
+

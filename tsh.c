@@ -550,7 +550,7 @@ void sigint_handler(int sig)
 	//Sigprocmask(SIG_BLOCK, &maskAll, &prevAll); // block all
 	pid = fgpid(jobs);
 	if(pid != 0){
-		Kill(pid, SIGINT);
+		Kill(-pid, SIGINT);
 		int jid = pid2jid(pid);
 		sio_puts("Job");
 		sio_puts(" [");	sio_putl(jid);	sio_puts("]");
@@ -583,8 +583,7 @@ void sigtstp_handler(int sig)
 		Sigprocmask(SIG_SETMASK, &prevMask, NULL);
 
 		// stop ONLY this fg job 
-		Kill(pid, SIGSTOP);
-
+		Kill(-pid, SIGSTOP);
 		int jid = pid2jid(pid);
 		sio_puts("Job");
 		sio_puts(" [");	sio_putl(jid);	sio_puts("]");

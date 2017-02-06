@@ -140,12 +140,13 @@ test9
 			//send signal to target job(real thing!) // need to t9 test.
 
 		//fg interface
-		fg real thing
-			BG -> FG  : fg command
-			ST -> FG  : fg command
+		//fg real thing
+			//BG -> FG  : fg command
+			//ST -> FG  : fg command
 
 		minor fix: rewrite do_bgfg output (jid valid! -> ...)
 
+		/*
 		do_bgfg
 			synchronization error?(in utest)
 				eval("/bin/echo 1:bg \n")
@@ -157,11 +158,14 @@ test9
 				2:bg xt
 				3:bg
 				bg command requires PID or %jobid argument
+		*/
 				 
 
 **	fix Makefile ----%d---- reflect true test number
 
 test10
+	//sending SIGINT to just one process didn't work?
+		//no, it works! is it build error???
 test11
 test12
 test13
