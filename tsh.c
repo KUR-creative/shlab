@@ -252,6 +252,7 @@ void eval(char* cmdline)
 		spid = 0;
 		// if fg job exists in jobs && spid is not 0, then loop
 		while( fgpid(jobs) && !spid ){ // or.. jobs?
+						//Sio_puts("?");
 			Sigsuspend(&prev);
 		}
 	}
@@ -415,6 +416,7 @@ res_t doBgFg(char* argv[])
 	act = (strcmp(actStr,"fg") == 0) ? FG:BG;
 
 	Sigfillset(&maskAll);
+
 	if(argType == JIDARG){
 		char*		jidstr	= arg1+1;
 		int			jid		= atoi(jidstr); //from str 2nd char to int
@@ -423,16 +425,13 @@ res_t doBgFg(char* argv[])
 		job = getjobjid(jobs,jid);
 
 		if(job != NULL){
+			pid_t	tpid	= job->pid;
 			if(act == FG){
-				// update jobs
 				job->state = FG;
-				// continue in foreground!
-				Kill(job->pid, SIGCONT);
+				Kill(-tpid, SIGCONT); //send sig to all proc in group
 			}else{
-				// update jobs
 				job->state = BG;
-				// continue in background!
-				Kill(job->pid, SIGCONT);
+				Kill(-tpid, SIGCONT);
 			}
 			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return VALID_JID;
@@ -450,16 +449,13 @@ res_t doBgFg(char* argv[])
 		job = getjobpid(jobs,pid);
 
 		if(job != NULL){
+			pid_t	tpid	= job->pid;
 			if(act == FG){
-				// update jobs
 				job->state = FG;
-				// continue in foreground!
-				Kill(job->pid, SIGCONT);
+				Kill(-tpid, SIGCONT);	//send sig to all proc in group
 			}else{
-				// update jobs
 				job->state = BG;
-				// continue in background!
-				Kill(job->pid, SIGCONT);
+				Kill(-tpid, SIGCONT);
 			}
 			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return VALID_PID;

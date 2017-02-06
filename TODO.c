@@ -167,7 +167,12 @@ test10
 	//sending SIGINT to just one process didn't work?
 		//no, it works! is it build error???
 test11
+	//ok..
 test12
+	fg %1 ST -> BG but it doesn't run?
+	why it doesn't exit? 
+		because the child of child isn't run again?
+		maybe..?
 test13
 test14
 test15
