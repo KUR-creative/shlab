@@ -175,15 +175,16 @@ test13
 		//because the child of child isn't run again?
 		//maybe..?
 test14
-	minor fix turn!
-		Execve error to shell error
-		fg a
-		bg a
-			argument must be a PID or %jobid
-		rewrite do_bgfg output 
-			(jid valid! -> ...)
-test15
+	//minor fix turn!
+		//Execve error to shell error
+		//fg a
+		//bg a
+			//argument must be a PID or %jobid
+		//rewrite do_bgfg output 
+			//(jid valid! -> ...)
+//test15
 test16
+	why wait? 
 
 mt own tiny tester library
 //ASSERT

@@ -159,6 +159,13 @@ t: tsh.c
 	######## mine ########
 	make test14
 
+t15: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
+	# -------------------------------15--------------------------------
+	######## ref ########
+	make rtest15
+	######## mine ########
+	make test15
 
 t16: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
@@ -216,7 +223,7 @@ test14:
 test15:
 	$(DRIVER) -t trace15.txt -s $(TSH) -a $(TSHARGS) 
 test16:
-	$(DRIVER) -t trace16.txt -s $(TSH) -a $(TSHARGS) -v
+	$(DRIVER) -t trace16.txt -s $(TSH) -a $(TSHARGS) 
 
 # Run the tests using the reference shell program
 rtest01:
@@ -250,7 +257,7 @@ rtest14:
 rtest15:
 	$(DRIVER) -t trace15.txt -s $(TSHREF) -a $(TSHARGS) 
 rtest16:
-	$(DRIVER) -t trace16.txt -s $(TSHREF) -a $(TSHARGS) -v
+	$(DRIVER) -t trace16.txt -s $(TSHREF) -a $(TSHARGS) 
 
 
 # clean up

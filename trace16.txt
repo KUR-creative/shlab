@@ -4,13 +4,14 @@
 #
 
 /bin/echo tsh> ./mystop 2 
-./mystop 2
+./mystop 2 
 
 SLEEP 3
 
 /bin/echo tsh> jobs
 jobs
 
-/bin/echo tsh> ./myint 10
-./myint 2
+
+/bin/echo tsh> ./myint 5
+./myint 5
 

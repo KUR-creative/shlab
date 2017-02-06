@@ -252,6 +252,7 @@ void eval(char* cmdline)
 
 	// if FG job is in jobs,
 	if(fgpid(jobs)){
+					//puts("wait where?");
 		// wait fg job explicitly.
 		spid = 0;
 		// if fg job exists in jobs && spid is not 0, then loop
@@ -496,14 +497,16 @@ void sigchld_handler(int sig)
 {
 	//sio_puts(">>>> SIG CHLD HANDLER <<<<\n");
 	int			oldErrno = errno;
+
 	sigset_t	maskAll, prevAll;
+	int			status;
 
 	Sigfillset(&maskAll);
 	//sio_puts(" -------- \n");
 	for(int i = 0; i < MAXJOBS; i++){
 		pid_t tpid = jobs[i].pid; //temp pid
 		if(tpid != 0){
-			spid = waitpid(tpid, NULL, WNOHANG);
+			spid = waitpid(tpid, &status, WNOHANG | WUNTRACED);
 			//if(spid > 0){
 				//sio_puts("\treaping child:");
 				//sio_putl(spid);
@@ -515,10 +518,35 @@ void sigchld_handler(int sig)
 			//}
 			//sio_puts("\n");
 			
-			//delete tpid job from job list!
-			Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
-			deletejob(jobs, spid);
-			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
+			/*
+			sio_puts(">> ");
+			sio_putl(WIFEXITED(status));
+			sio_puts(" = 1 norm dead\t");
+
+			sio_puts(">> ");
+			sio_putl(WIFSIGNALED(status));
+			sio_puts(" = 1 sig dead\t");
+
+			sio_puts(">> ");
+			sio_putl(WIFSTOPPED(status));
+			sio_puts(" = 1 sig stopped\n");
+			*/
+
+			if( WIFEXITED(status) || WIFSIGNALED(status) ){
+				//delete tpid job from job list!
+				Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
+				deletejob(jobs, spid);
+				Sigprocmask(SIG_SETMASK, &prevAll, NULL);
+			}
+
+			if( WIFSTOPPED(status) ){
+				//chage SIGTSTP target state:FG -> ST
+				Sigprocmask(SIG_BLOCK, &maskAll, &prevAll);
+				struct job_t* job = getjobpid(jobs, spid);
+				if(job != NULL)
+					job->state = ST;
+				Sigprocmask(SIG_SETMASK, &prevAll, NULL);
+			}
 		}
 	}
 
