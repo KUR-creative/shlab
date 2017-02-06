@@ -371,23 +371,18 @@ void do_bgfg(char **argv)
 		break;
 
 	case UNDEFARG:
-		printf("%s argument must be a PID or %%jobid\n", act);
+		printf("%s: argument must be a PID or %%jobid\n", act);
 		break;
 	
 	case INVALID_JID:
 		printf("%s: No such job\n", arg1);
 		break;
 
-	case VALID_JID:
-		puts("jid valid!");
-		break;
-
 	case INVALID_PID:
 		printf("(%s): No such process\n", arg1);
 		break;
 
-	case VALID_PID:
-		puts("pid valid!");
+	case VALID_JID: case VALID_PID:
 		break;
 
 	default:
@@ -436,6 +431,7 @@ res_t doBgFg(char* argv[])
 			}else{
 				job->state = BG;
 				Kill(-tpid, SIGCONT);
+				printf("[%d] (%d) %s", job->jid, job->pid, job->cmdline);
 			}
 			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return VALID_JID;
@@ -460,6 +456,7 @@ res_t doBgFg(char* argv[])
 			}else{
 				job->state = BG;
 				Kill(-tpid, SIGCONT);
+				printf("[%d] (%d) %s", job->jid, job->pid, job->cmdline);
 			}
 			Sigprocmask(SIG_SETMASK, &prevAll, NULL);
 			return VALID_PID;
