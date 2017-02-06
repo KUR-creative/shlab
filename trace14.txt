@@ -1,6 +1,17 @@
 #
 # trace14.txt - Simple error handling
 #
+/bin/echo ----minor fixes----
+/bin/echo tsh> ./bogus
+./bogus
+
+/bin/echo tsh> fg a
+fg a
+
+/bin/echo tsh> bg a
+bg a
+/bin/echo ----------------
+
 /bin/echo tsh> ./bogus
 ./bogus
 

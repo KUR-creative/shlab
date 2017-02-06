@@ -144,7 +144,6 @@ test9
 			//BG -> FG  : fg command
 			//ST -> FG  : fg command
 
-		minor fix: rewrite do_bgfg output (jid valid! -> ...)
 
 		/*
 		do_bgfg
@@ -169,12 +168,20 @@ test10
 test11
 	//ok..
 test12
-	fg %1 ST -> BG but it doesn't run?
-	why it doesn't exit? 
-		because the child of child isn't run again?
-		maybe..?
+	//ok..
 test13
+	//fg %1 ST -> BG but it doesn't run?
+		//why it doesn't exit? 
+		//because the child of child isn't run again?
+		//maybe..?
 test14
+	minor fix turn!
+		Execve error to shell error
+		fg a
+		bg a
+			argument must be a PID or %jobid
+		rewrite do_bgfg output 
+			(jid valid! -> ...)
 test15
 test16
 

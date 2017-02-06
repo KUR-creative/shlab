@@ -143,13 +143,21 @@ t12: tsh.c
 	######## mine ########
 	make test12
 
-t: tsh.c
+t13: tsh.c
 	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
 	# -------------------------------13--------------------------------
 	######## ref ########
 	make rtest13
 	######## mine ########
 	make test13
+
+t: tsh.c
+	$(CC) $(CFLAGS) -o tsh tsh.c csapp.c $(LIBS) $(INCS) -DRELEASE
+	# -------------------------------14--------------------------------
+	######## ref ########
+	make rtest14
+	######## mine ########
+	make test14
 
 
 t16: tsh.c

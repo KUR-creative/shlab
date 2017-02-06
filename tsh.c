@@ -367,7 +367,7 @@ void do_bgfg(char **argv)
 		break;
 
 	case UNDEFARG:
-		printf("%s command requires PID or %%jobid argument\n", act);
+		printf("%s argument must be a PID or %%jobid\n", act);
 		break;
 	
 	case INVALID_JID:
@@ -1254,6 +1254,14 @@ Test(doBgFg, ifArg1_validPIDthenJobStateChange_ST_to_BG){
 	deleteAllJobs(jobs);
 }
 
+Test(doBgFg, ifArg1isNotPidNorJidThenRet_UNDEFARG){
+	//given
+	char*	argv[2]	= {"bg", "a"};	
+	//when
+	res_t	result	= doBgFg(argv);
+	//then
+	dASSERT_EQ(result, UNDEFARG);
+}
 /*
 // why signal handler cannot be called???
 // can't test signal with criterion!
